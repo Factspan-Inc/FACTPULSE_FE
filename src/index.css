@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   /* Custom responsive screen breakpoints as requested */
   --breakpoint-xs: 250px;       /* Custom tiny mobile viewport */
