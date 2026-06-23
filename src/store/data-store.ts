@@ -585,10 +585,55 @@ export const useDataStore = create<DataStore>((set, get) => ({
       stakeholders: state.stakeholders.filter((s) => s.id !== id),
     })),
 
-  addProject: (proj) =>
+  addProject: (proj) => {
+    const projectId = `proj-${Date.now()}`;
+    const defaultRecords: GovernanceRecord[] = [
+      {
+        id: `gov-${Date.now()}-1`,
+        projectId,
+        type: 'STANDUP',
+        title: 'Daily Standup Check',
+        dueDate: new Date(Date.now() + 86400000).toISOString().substring(0, 10),
+        status: 'PENDING',
+      },
+      {
+        id: `gov-${Date.now()}-2`,
+        projectId,
+        type: 'WEEKLY_NOTE',
+        title: 'Weekly Note - Week 25',
+        dueDate: new Date(Date.now() + 86400000 * 7).toISOString().substring(0, 10),
+        status: 'PENDING',
+      },
+      {
+        id: `gov-${Date.now()}-3`,
+        projectId,
+        type: 'WBR',
+        title: 'WBR - Week 25',
+        dueDate: new Date(Date.now() + 86400000 * 5).toISOString().substring(0, 10),
+        status: 'PENDING',
+      },
+      {
+        id: `gov-${Date.now()}-4`,
+        projectId,
+        type: 'MBR',
+        title: 'MBR - June 2026',
+        dueDate: new Date(Date.now() + 86400000 * 14).toISOString().substring(0, 10),
+        status: 'PENDING',
+      },
+      {
+        id: `gov-${Date.now()}-5`,
+        projectId,
+        type: 'QBR',
+        title: 'QBR - Q2 2026',
+        dueDate: new Date(Date.now() + 86400000 * 30).toISOString().substring(0, 10),
+        status: 'PENDING',
+      },
+    ];
     set((state) => ({
-      projects: [...state.projects, { ...proj, id: `proj-${state.projects.length + 1}` }],
-    })),
+      projects: [...state.projects, { ...proj, id: projectId }],
+      governanceRecords: [...state.governanceRecords, ...defaultRecords],
+    }));
+  },
   updateProject: (id, updates) =>
     set((state) => ({
       projects: state.projects.map((p) => (p.id === id ? { ...p, ...updates } : p)),

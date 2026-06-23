@@ -1,12 +1,16 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useDataStore } from '../../store/data-store';
+import { useAuthStore } from '../../store/auth-store';
 
 export default function ProjectsListPage() {
   const { projects, accounts } = useDataStore();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'ARCHIVED'>('ALL');
   const [healthFilter, setHealthFilter] = useState<'ALL' | 'GREEN' | 'AMBER' | 'RED'>('ALL');
+
+  const user = useAuthStore((state) => state.user);
+  const canCreateProject = user && ['PLATFORM_ADMIN', 'ACCOUNT_LEAD', 'DELIVERY_LEAD'].includes(user.role);
 
   const filteredProjects = projects.filter((p) => {
     const account = accounts.find((a) => a.id === p.accountId);
@@ -42,13 +46,41 @@ export default function ProjectsListPage() {
       }}
     >
       {/* Header */}
-      <div style={{ marginBottom: '32px' }}>
-        <h1 style={{ color: '#1e3a8a', margin: 0, fontSize: '28px', fontWeight: 700 }}>
-          All Projects
-        </h1>
-        <p style={{ color: '#64748b', margin: '4px 0 0 0', fontSize: '14px' }}>
-          Track compliance rates and active checkpoints across delivery streams
-        </p>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '32px',
+        }}
+      >
+        <div>
+          <h1 style={{ color: '#1e3a8a', margin: 0, fontSize: '28px', fontWeight: 700 }}>
+            All Projects
+          </h1>
+          <p style={{ color: '#64748b', margin: '4px 0 0 0', fontSize: '14px' }}>
+            Track compliance rates and active checkpoints across delivery streams
+          </p>
+        </div>
+        {canCreateProject && (
+          <Link
+            to="/projects/new"
+            style={{
+              textDecoration: 'none',
+              background: '#d97706',
+              color: '#ffffff',
+              padding: '10px 20px',
+              borderRadius: '6px',
+              fontWeight: 600,
+              fontSize: '14px',
+              transition: 'background-color 0.2s',
+            }}
+            onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#e07613')}
+            onMouseOut={(e) => (e.currentTarget.style.backgroundColor = '#d97706')}
+          >
+            + Create Project
+          </Link>
+        )}
       </div>
 
       {/* Filter Toolbar */}

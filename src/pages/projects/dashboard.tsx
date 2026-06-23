@@ -2,9 +2,13 @@ import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useDataStore } from '../../store/data-store';
 import type { GovernanceRecord, Risk, Action, Decision, Milestone } from '../../store/data-store';
+import { useAuthStore } from '../../store/auth-store';
 
 export default function ProjectDashboardPage() {
   const { accountId, projectId } = useParams<{ accountId: string; projectId: string }>();
+  const user = useAuthStore((state) => state.user);
+  const canEditProject = user && ['PLATFORM_ADMIN', 'ACCOUNT_LEAD', 'DELIVERY_LEAD'].includes(user.role);
+
   const {
     accounts,
     projects,
@@ -181,6 +185,33 @@ export default function ProjectDashboardPage() {
             >
               {project.health} Health
             </span>
+            {canEditProject && (
+              <Link
+                to={`/accounts/${account?.id}/projects/${project.id}/edit`}
+                style={{
+                  textDecoration: 'none',
+                  background: '#ffffff',
+                  border: '1px solid #cbd5e1',
+                  color: '#475569',
+                  padding: '2px 8px',
+                  borderRadius: '4px',
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  transition: 'all 0.2s',
+                  marginLeft: '8px',
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.backgroundColor = '#f1f5f9';
+                  e.currentTarget.style.borderColor = '#94a3b8';
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.backgroundColor = '#ffffff';
+                  e.currentTarget.style.borderColor = '#cbd5e1';
+                }}
+              >
+                ✏️ Edit Project
+              </Link>
+            )}
           </div>
           <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '13px' }}>
             Account Partner: {account?.name || 'Unknown'} • Status: {project.status}

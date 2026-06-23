@@ -12,6 +12,7 @@ import {
   StakeholderManagementPage,
   ProjectsListPage,
   ProjectDashboardPage,
+  ProjectFormPage,
   GovernanceCenterPage,
   GovernanceExceptionsPage,
   ArtifactUploadPage,
@@ -370,11 +371,41 @@ export default function AppRoutes() {
           }
         />
         <Route
+          path="/projects/new"
+          element={
+            <ProtectedRoute allowedRoles={['PLATFORM_ADMIN', 'ACCOUNT_LEAD', 'DELIVERY_LEAD']}>
+              <Layout>
+                <ProjectFormPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/accounts/:accountId/projects/new"
+          element={
+            <ProtectedRoute allowedRoles={['PLATFORM_ADMIN', 'ACCOUNT_LEAD', 'DELIVERY_LEAD']}>
+              <Layout>
+                <ProjectFormPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/accounts/:accountId/projects/:projectId"
           element={
             <ProtectedRoute>
               <Layout>
                 <ProjectDashboardPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/accounts/:accountId/projects/:projectId/edit"
+          element={
+            <ProtectedRoute allowedRoles={['PLATFORM_ADMIN', 'ACCOUNT_LEAD', 'DELIVERY_LEAD']}>
+              <Layout>
+                <ProjectFormPage />
               </Layout>
             </ProtectedRoute>
           }

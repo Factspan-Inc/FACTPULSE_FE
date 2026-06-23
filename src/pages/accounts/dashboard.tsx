@@ -1,9 +1,13 @@
 import { useParams, Link } from 'react-router-dom';
 import { useDataStore } from '../../store/data-store';
+import { useAuthStore } from '../../store/auth-store';
 
 export default function AccountDashboardPage() {
   const { accountId } = useParams<{ accountId: string }>();
   const { accounts, projects, buyingCenters, stakeholders } = useDataStore();
+  const user = useAuthStore((state) => state.user);
+
+  const canCreateProject = user && ['PLATFORM_ADMIN', 'ACCOUNT_LEAD', 'DELIVERY_LEAD'].includes(user.role);
 
   const account = accounts.find((a) => a.id === accountId);
   if (!account) {
@@ -215,12 +219,33 @@ export default function AccountDashboardPage() {
               marginBottom: '16px',
             }}
           >
-            <h3 style={{ margin: 0, color: '#1e3a8a', fontSize: '18px', fontWeight: 700 }}>
-              Projects Portfolio
-            </h3>
-            <span style={{ fontSize: '13px', color: '#64748b' }}>
-              {accountProjects.length} Total
-            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <h3 style={{ margin: 0, color: '#1e3a8a', fontSize: '18px', fontWeight: 700 }}>
+                Projects Portfolio
+              </h3>
+              <span style={{ fontSize: '13px', color: '#64748b' }}>
+                ({accountProjects.length} Total)
+              </span>
+            </div>
+            {canCreateProject && (
+              <Link
+                to={`/accounts/${account.id}/projects/new`}
+                style={{
+                  textDecoration: 'none',
+                  background: '#d97706',
+                  color: '#ffffff',
+                  padding: '6px 12px',
+                  borderRadius: '4px',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  transition: 'background-color 0.2s',
+                }}
+                onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#e07613')}
+                onMouseOut={(e) => (e.currentTarget.style.backgroundColor = '#d97706')}
+              >
+                + Create Project
+              </Link>
+            )}
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>

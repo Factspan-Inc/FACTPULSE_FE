@@ -22,6 +22,7 @@ export const StakeholderManagementPage = lazy(() => import('../pages/buying-cent
 // Project
 export const ProjectsListPage = lazy(() => import('../pages/projects/list'));
 export const ProjectDashboardPage = lazy(() => import('../pages/projects/dashboard'));
+export const ProjectFormPage = lazy(() => import('../pages/projects/form'));
 
 // Governance
 export const GovernanceCenterPage = lazy(() => import('../pages/governance'));
