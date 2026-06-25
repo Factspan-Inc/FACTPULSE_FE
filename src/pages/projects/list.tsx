@@ -220,7 +220,17 @@ export default function ProjectsListPage() {
                     }}
                   >
                     <td style={{ padding: '16px 24px', fontWeight: 600, color: '#1e3a8a' }}>
-                      {p.name}
+                      <div>{p.name}</div>
+                      {p.lead && (
+                        <div style={{ fontSize: '11px', color: '#475569', fontWeight: 500, marginTop: '4px' }}>
+                          👤 Lead: {p.lead}
+                        </div>
+                      )}
+                      {p.details && (
+                        <div style={{ fontSize: '12px', color: '#64748b', fontWeight: 'normal', marginTop: '4px', maxWidth: '400px', lineHeight: '1.3' }}>
+                          {p.details}
+                        </div>
+                      )}
                     </td>
                     <td style={{ padding: '16px 24px', color: '#1e293b' }}>
                       🏢 {account?.name || 'Unknown'}
