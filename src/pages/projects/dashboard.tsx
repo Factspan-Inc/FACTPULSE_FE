@@ -204,6 +204,7 @@ export default function ProjectDashboardPage() {
     decisions,
     milestones,
     governanceRecords,
+    artifacts,
     addRisk,
     updateRisk,
     deleteRisk,
@@ -214,6 +215,8 @@ export default function ProjectDashboardPage() {
     deleteDecision,
     completeGovernanceRecord,
     recalculateGovernance,
+    uploadArtifact,
+    deleteArtifact,
   } = useDataStore();
 
   const account = accounts.find((a) => a.id === accountId);
@@ -261,7 +264,12 @@ export default function ProjectDashboardPage() {
   const [decDesc, setDecDesc] = useState('');
   const [decMadeBy, setDecMadeBy] = useState('');
 
-  const [activeTab, setActiveTab] = useState<'governance' | 'risks' | 'actions' | 'decisions' | 'milestones'>('governance');
+  const [artName, setArtName] = useState('');
+  const [artType, setArtType] = useState<'PDF' | 'PPT' | 'DOC'>('PDF');
+  const [artCategory, setArtCategory] = useState<'WBR' | 'MOM' | 'ARCHITECTURE' | 'NOTE'>('WBR');
+  const [artSize, setArtSize] = useState('1.5 MB');
+
+  const [activeTab, setActiveTab] = useState<'governance' | 'risks' | 'actions' | 'decisions' | 'milestones' | 'artifacts'>('governance');
 
   if (!project) {
     return (
@@ -292,6 +300,19 @@ export default function ProjectDashboardPage() {
     if (!decDesc || !decMadeBy) return;
     addDecision(project.id, { description: decDesc, madeBy: decMadeBy, date: new Date().toISOString().substring(0, 10) });
     setDecDesc(''); setDecMadeBy('');
+  };
+
+  const handleAddArtifact = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!artName) return;
+    uploadArtifact(project.id, {
+      name: artName,
+      type: artType,
+      size: artSize,
+      category: artCategory,
+    });
+    setArtName('');
+    setArtSize('1.5 MB');
   };
 
   const handleCompleteGov = (recordId: string) => {
@@ -452,8 +473,13 @@ export default function ProjectDashboardPage() {
               </span>
             </div>
             <p style={{ margin: '6px 0 0 0', color: 'rgba(255,255,255,0.6)', fontSize: '13px' }}>
-              {account ? `${account.name} · ` : ''}Project Delivery Dashboard
+              {account ? `${account.name} · ` : ''}Project Delivery Dashboard{project.lead ? ` · Lead: ${project.lead}` : ''}
             </p>
+            {project.details && (
+              <p style={{ margin: '8px 0 0 0', color: 'rgba(255,255,255,0.85)', fontSize: '13px', maxWidth: '600px', lineHeight: '1.4' }}>
+                {project.details}
+              </p>
+            )}
           </div>
 
           <div style={{ display: 'flex', gap: '28px', alignItems: 'center', position: 'relative' }}>
@@ -549,7 +575,8 @@ export default function ProjectDashboardPage() {
                   { key: 'risks', label: '⚠️ Risks' },
                   { key: 'actions', label: '✅ Actions' },
                   { key: 'decisions', label: '🔖 Decisions' },
-                  { key: 'milestones', label: '🏁 Milestones' },
+                  { key: 'milestones', label: '🏁 Timeline' },
+                  { key: 'artifacts', label: '📁 Artifacts' },
                 ] as const
               ).map((t) => (
                 <button key={t.key} style={tabStyle(t.key)} onClick={() => setActiveTab(t.key)}>
@@ -757,30 +784,241 @@ export default function ProjectDashboardPage() {
                 </>
               )}
 
-              {/* ── MILESTONES TAB ── */}
+              {/* ── TIMELINE TAB ── */}
               {activeTab === 'milestones' && (
                 <>
-                  <h3 style={{ margin: '0 0 16px 0', color: '#1e3a8a', fontSize: '17px', fontWeight: 800 }}>Project Milestones</h3>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <h3 style={{ margin: '0 0 8px 0', color: '#1e3a8a', fontSize: '17px', fontWeight: 800 }}>Project Timeline</h3>
+                  <p style={{ margin: '0 0 24px 0', fontSize: '12px', color: '#94a3b8' }}>
+                    Visual project roadmap checkpoints and key release target dates
+                  </p>
+                  
+                  <div style={{ position: 'relative', paddingLeft: '28px', borderLeft: '2px solid #e2e8f0', margin: '10px 0 10px 10px' }}>
                     {projectMilestones.map((m) => {
-                      const statusColor = m.status === 'COMPLETED' ? '#10b981' : m.status === 'DELAYED' ? '#ef4444' : '#f59e0b';
-                      const statusBg = m.status === 'COMPLETED' ? '#d1fae5' : m.status === 'DELAYED' ? '#fee2e2' : '#fef3c7';
+                      const isCompleted = m.status === 'COMPLETED';
+                      const isDelayed = m.status === 'DELAYED';
+                      const color = isCompleted ? '#10b981' : isDelayed ? '#ef4444' : '#f59e0b';
+                      const bg = isCompleted ? '#d1fae5' : isDelayed ? '#fee2e2' : '#fef3c7';
+                      
                       return (
-                        <div key={m.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1.5px solid #e2e8f0', borderRadius: '10px', padding: '14px 18px', gap: '12px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                            <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: statusColor, flexShrink: 0 }} />
+                        <div key={m.id} style={{ position: 'relative', marginBottom: '24px' }}>
+                          {/* Timeline dot */}
+                          <div 
+                            style={{ 
+                              position: 'absolute', 
+                              left: '-35px', 
+                              top: '2px', 
+                              width: '12px', 
+                              height: '12px', 
+                              borderRadius: '50%', 
+                              background: '#ffffff',
+                              border: `3px solid ${color}`,
+                              boxShadow: '0 0 0 4px #ffffff',
+                              zIndex: 2 
+                            }} 
+                          />
+                          
+                          <div 
+                            style={{ 
+                              background: '#ffffff',
+                              border: '1.5px solid #e2e8f0',
+                              borderRadius: '12px',
+                              padding: '16px 20px',
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                              boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
+                              transition: 'border-color 0.2s',
+                            }}
+                            onMouseOver={(e) => e.currentTarget.style.borderColor = color}
+                            onMouseOut={(e) => e.currentTarget.style.borderColor = '#e2e8f0'}
+                          >
                             <div>
-                              <div style={{ fontWeight: 700, color: '#1e293b', fontSize: '13px' }}>{m.name}</div>
-                              <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>Target: {m.dueDate}</div>
+                              <div style={{ fontWeight: 700, color: '#1e293b', fontSize: '14px' }}>{m.name}</div>
+                              <div style={{ fontSize: '12px', color: '#64748b', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                📅 Target Date: <strong style={{ color: '#475569' }}>{m.dueDate}</strong>
+                              </div>
                             </div>
+                            <span 
+                              style={{ 
+                                fontSize: '10px', 
+                                fontWeight: 800, 
+                                padding: '4px 10px', 
+                                borderRadius: '12px', 
+                                background: bg, 
+                                color: color,
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.5px'
+                              }}
+                            >
+                              {m.status}
+                            </span>
                           </div>
-                          <span style={{ fontSize: '11px', fontWeight: 700, padding: '3px 10px', borderRadius: '8px', background: statusBg, color: statusColor }}>
-                            {m.status}
-                          </span>
                         </div>
                       );
                     })}
-                    {projectMilestones.length === 0 && <div style={{ textAlign: 'center', padding: '28px', color: '#94a3b8', fontSize: '13px' }}>No milestones defined for this project.</div>}
+                    {projectMilestones.length === 0 && (
+                      <div style={{ textAlign: 'center', padding: '28px', color: '#94a3b8', fontSize: '13px' }}>
+                        No milestones or timeline checkpoints defined for this project.
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+
+              {/* ── ARTIFACTS TAB ── */}
+              {activeTab === 'artifacts' && (
+                <>
+                  <h3 style={{ margin: '0 0 4px 0', color: '#1e3a8a', fontSize: '17px', fontWeight: 800 }}>Project Artifacts</h3>
+                  <p style={{ margin: '0 0 18px 0', fontSize: '12px', color: '#94a3b8' }}>
+                    Governance documents: WBRs, MOMs, Architecture plans, and sync Notes
+                  </p>
+                  
+                  {/* Log new artifact form */}
+                  <form 
+                    onSubmit={handleAddArtifact} 
+                    style={{ 
+                      display: 'flex', 
+                      gap: '10px', 
+                      flexWrap: 'wrap', 
+                      marginBottom: '24px', 
+                      paddingBottom: '20px', 
+                      borderBottom: '1.5px solid #f1f5f9' 
+                    }}
+                  >
+                    <input 
+                      type="text" 
+                      required 
+                      placeholder="Artifact file name (e.g. MOM_Week25.docx)…" 
+                      style={{ flex: 3, minWidth: '220px', padding: '9px 12px', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '13px', outline: 'none' }} 
+                      value={artName} 
+                      onChange={(e) => setArtName(e.target.value)} 
+                    />
+                    
+                    <select 
+                      style={{ padding: '9px 12px', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '13px', outline: 'none', background: '#fff' }} 
+                      value={artCategory} 
+                      onChange={(e) => setArtCategory(e.target.value as any)}
+                    >
+                      <option value="WBR">WBR (Weekly Business Review)</option>
+                      <option value="MOM">MOM (Minutes of Meeting)</option>
+                      <option value="ARCHITECTURE">Architecture Diagram/Doc</option>
+                      <option value="NOTE">Developer/Sync Notes</option>
+                    </select>
+
+                    <select 
+                      style={{ padding: '9px 12px', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '13px', outline: 'none', background: '#fff' }} 
+                      value={artType} 
+                      onChange={(e) => setArtType(e.target.value as any)}
+                    >
+                      <option value="PDF">PDF</option>
+                      <option value="PPT">PPT/PPTX</option>
+                      <option value="DOC">DOC/DOCX</option>
+                    </select>
+
+                    <input 
+                      type="text" 
+                      required 
+                      placeholder="Size (e.g. 2.1 MB)" 
+                      style={{ width: '90px', padding: '9px 12px', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '13px', outline: 'none' }} 
+                      value={artSize} 
+                      onChange={(e) => setArtSize(e.target.value)} 
+                    />
+
+                    <button 
+                      type="submit" 
+                      style={{ 
+                        background: '#1e3a8a', 
+                        color: '#fff', 
+                        border: 'none', 
+                        padding: '9px 18px', 
+                        borderRadius: '8px', 
+                        cursor: 'pointer', 
+                        fontSize: '13px', 
+                        fontWeight: 700,
+                        transition: 'background-color 0.2s'
+                      }}
+                      onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#0b204e'}
+                      onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#1e3a8a'}
+                    >
+                      + Add Artifact
+                    </button>
+                  </form>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '14px' }}>
+                    {artifacts.filter((art) => art.projectId === project.id).map((art) => {
+                      const icon = art.type === 'PDF' ? '📕' : art.type === 'PPT' ? '📙' : '📘';
+                      const badgeBg = 
+                        art.category === 'WBR' ? 'rgba(30,58,138,0.08)' :
+                        art.category === 'MOM' ? 'rgba(16,185,129,0.08)' :
+                        art.category === 'ARCHITECTURE' ? 'rgba(138,61,120,0.08)' : 'rgba(245,158,11,0.08)';
+                      
+                      const badgeColor = 
+                        art.category === 'WBR' ? '#1e3a8a' :
+                        art.category === 'MOM' ? '#10b981' :
+                        art.category === 'ARCHITECTURE' ? '#8a3d78' : '#f59e0b';
+                      
+                      return (
+                        <div 
+                          key={art.id} 
+                          style={{ 
+                            border: '1.5px solid #e2e8f0', 
+                            borderRadius: '12px', 
+                            padding: '16px', 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'space-between',
+                            background: '#ffffff',
+                            transition: 'border-color 0.2s',
+                          }}
+                          onMouseOver={(e) => e.currentTarget.style.borderColor = '#cbd5e1'}
+                          onMouseOut={(e) => e.currentTarget.style.borderColor = '#e2e8f0'}
+                        >
+                          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                            <span style={{ fontSize: '24px' }}>{icon}</span>
+                            <div>
+                              <div style={{ fontWeight: 700, color: '#1e293b', fontSize: '13px', wordBreak: 'break-all' }}>{art.name}</div>
+                              <div style={{ display: 'flex', gap: '6px', marginTop: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
+                                <span 
+                                  style={{ 
+                                    fontSize: '9px', 
+                                    fontWeight: 800, 
+                                    padding: '2px 6px', 
+                                    borderRadius: '4px', 
+                                    background: badgeBg, 
+                                    color: badgeColor 
+                                  }}
+                                >
+                                  {art.category || 'OTHER'}
+                                </span>
+                                <span style={{ fontSize: '10px', color: '#94a3b8' }}>{art.size} · {art.uploadedAt}</span>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <button 
+                            onClick={() => deleteArtifact(art.id)} 
+                            style={{ 
+                              background: 'transparent', 
+                              border: 'none', 
+                              color: '#cbd5e1', 
+                              cursor: 'pointer', 
+                              fontSize: '16px', 
+                              padding: '4px',
+                              transition: 'color 0.2s' 
+                            }}
+                            onMouseOver={(e) => e.currentTarget.style.color = '#ef4444'}
+                            onMouseOut={(e) => e.currentTarget.style.color = '#cbd5e1'}
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      );
+                    })}
+                    {artifacts.filter((art) => art.projectId === project.id).length === 0 && (
+                      <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '32px', color: '#94a3b8', fontSize: '13px' }}>
+                        📁 No artifacts uploaded for this project yet.
+                      </div>
+                    )}
                   </div>
                 </>
               )}

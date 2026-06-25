@@ -45,6 +45,8 @@ export interface Project {
   status: 'ACTIVE' | 'ARCHIVED';
   health: 'GREEN' | 'AMBER' | 'RED';
   complianceRate: number;
+  details?: string;
+  lead?: string;
 }
 
 export interface Artifact {
@@ -55,6 +57,7 @@ export interface Artifact {
   uploadedAt: string;
   size: string;
   status: 'PROCESSING' | 'COMPLETED';
+  category?: 'WBR' | 'MOM' | 'ARCHITECTURE' | 'NOTE';
 }
 
 export interface Risk {
@@ -168,7 +171,7 @@ interface DataStore {
   // Artifacts
   uploadArtifact: (
     projectId: string,
-    file: { name: string; type: 'PDF' | 'PPT' | 'DOC'; size: string }
+    file: { name: string; type: 'PDF' | 'PPT' | 'DOC'; size: string; category?: 'WBR' | 'MOM' | 'ARCHITECTURE' | 'NOTE' }
   ) => string;
   deleteArtifact: (id: string) => void;
 
@@ -355,6 +358,8 @@ export const useDataStore = create<DataStore>((set, get) => ({
       status: 'ACTIVE',
       health: 'GREEN',
       complianceRate: 95,
+      details: 'Customer loyalty rewards program integration and web portal interface.',
+      lead: 'Sahil Jaryal',
     },
     {
       id: 'proj-2',
@@ -363,6 +368,8 @@ export const useDataStore = create<DataStore>((set, get) => ({
       status: 'ACTIVE',
       health: 'GREEN',
       complianceRate: 90,
+      details: 'In-store scan & go mobile feature allowing shoppers to scan barcodes and pay via app.',
+      lead: 'Delivery Manager',
     },
     {
       id: 'proj-3',
@@ -371,6 +378,8 @@ export const useDataStore = create<DataStore>((set, get) => ({
       status: 'ACTIVE',
       health: 'AMBER',
       complianceRate: 72,
+      details: 'Integration of pharmacy benefits management platform with health tracking APIs.',
+      lead: 'Bob Johnson',
     },
     {
       id: 'proj-4',
@@ -379,6 +388,8 @@ export const useDataStore = create<DataStore>((set, get) => ({
       status: 'ACTIVE',
       health: 'GREEN',
       complianceRate: 85,
+      details: 'Online appointment booking and notification stream for seasonal vaccine distributions.',
+      lead: 'Macy Account Manager',
     },
     {
       id: 'proj-5',
@@ -387,6 +398,8 @@ export const useDataStore = create<DataStore>((set, get) => ({
       status: 'ACTIVE',
       health: 'RED',
       complianceRate: 42,
+      details: 'Migration of electronic health records from legacy databases to cloud-hosted platform.',
+      lead: 'Sahil Jaryal',
     },
   ],
   artifacts: [
@@ -398,6 +411,7 @@ export const useDataStore = create<DataStore>((set, get) => ({
       uploadedAt: '2026-06-15 10:00',
       size: '2.4 MB',
       status: 'COMPLETED',
+      category: 'MOM',
     },
     {
       id: 'art-2',
@@ -407,6 +421,27 @@ export const useDataStore = create<DataStore>((set, get) => ({
       uploadedAt: '2026-06-14 14:30',
       size: '8.1 MB',
       status: 'COMPLETED',
+      category: 'WBR',
+    },
+    {
+      id: 'art-3',
+      projectId: 'proj-1',
+      name: 'LoyaltyPortal_Architecture_V2.pdf',
+      type: 'PDF',
+      uploadedAt: '2026-06-10 11:15',
+      size: '4.2 MB',
+      status: 'COMPLETED',
+      category: 'ARCHITECTURE',
+    },
+    {
+      id: 'art-4',
+      projectId: 'proj-1',
+      name: 'SSO_Setup_Developer_Notes.docx',
+      type: 'DOC',
+      uploadedAt: '2026-06-12 09:45',
+      size: '1.8 MB',
+      status: 'COMPLETED',
+      category: 'NOTE',
     },
   ],
   risks: [
@@ -664,6 +699,7 @@ export const useDataStore = create<DataStore>((set, get) => ({
       uploadedAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
       size: file.size,
       status: 'PROCESSING',
+      category: file.category,
     };
     set((state) => ({
       artifacts: [...state.artifacts, newArt],

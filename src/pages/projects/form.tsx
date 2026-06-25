@@ -15,6 +15,8 @@ export default function ProjectFormPage() {
   const [status, setStatus] = useState<'ACTIVE' | 'ARCHIVED'>('ACTIVE');
   const [health, setHealth] = useState<'GREEN' | 'AMBER' | 'RED'>('GREEN');
   const [complianceRate, setComplianceRate] = useState(100);
+  const [details, setDetails] = useState('');
+  const [lead, setLead] = useState('');
 
   // Initialize fields
   useEffect(() => {
@@ -24,10 +26,16 @@ export default function ProjectFormPage() {
       setStatus(project.status);
       setHealth(project.health);
       setComplianceRate(project.complianceRate);
+      setDetails(project.details || '');
+      setLead(project.lead || '');
     } else if (accountId) {
       setSelectedAccountId(accountId);
+      setDetails('');
+      setLead('');
     } else if (accounts.length > 0 && !selectedAccountId) {
       setSelectedAccountId(accounts[0].id);
+      setDetails('');
+      setLead('');
     }
   }, [isEdit, project, accountId, accounts]);
 
@@ -41,6 +49,8 @@ export default function ProjectFormPage() {
         status,
         health,
         complianceRate: Number(complianceRate),
+        details,
+        lead,
       });
       navigate(`/accounts/${selectedAccountId}/projects/${projectId}`);
     } else {
@@ -50,6 +60,8 @@ export default function ProjectFormPage() {
         status,
         health,
         complianceRate: Number(complianceRate),
+        details,
+        lead,
       });
       navigate(`/accounts/${selectedAccountId}`);
     }
@@ -246,7 +258,7 @@ export default function ProjectFormPage() {
           </div>
 
           {/* Compliance Rate */}
-          <div style={{ marginBottom: '24px' }}>
+          <div style={{ marginBottom: '20px' }}>
             <label
               style={{
                 display: 'block',
@@ -273,6 +285,66 @@ export default function ProjectFormPage() {
               }}
               value={complianceRate}
               onChange={(e) => setComplianceRate(Number(e.target.value))}
+            />
+          </div>
+
+          {/* Project Lead */}
+          <div style={{ marginBottom: '20px' }}>
+            <label
+              style={{
+                display: 'block',
+                marginBottom: '6px',
+                fontWeight: 600,
+                fontSize: '13px',
+                color: '#334155',
+              }}
+            >
+              Project Lead
+            </label>
+            <input
+              type="text"
+              placeholder="e.g. Sahil Jaryal"
+              style={{
+                width: '100%',
+                padding: '10px 12px',
+                border: '1px solid #cbd5e1',
+                borderRadius: '6px',
+                fontSize: '14px',
+                boxSizing: 'border-box',
+              }}
+              value={lead}
+              onChange={(e) => setLead(e.target.value)}
+            />
+          </div>
+
+          {/* Project Details */}
+          <div style={{ marginBottom: '24px' }}>
+            <label
+              style={{
+                display: 'block',
+                marginBottom: '6px',
+                fontWeight: 600,
+                fontSize: '13px',
+                color: '#334155',
+              }}
+            >
+              Project Details
+            </label>
+            <textarea
+              placeholder="Describe the project stream objectives, deliverables, and architecture..."
+              rows={3}
+              style={{
+                width: '100%',
+                padding: '10px 12px',
+                border: '1px solid #cbd5e1',
+                borderRadius: '6px',
+                fontSize: '14px',
+                boxSizing: 'border-box',
+                fontFamily: 'inherit',
+                resize: 'vertical',
+              }}
+              value={details}
+              onChange={(e) => setDetails(e.target.value)}
             />
           </div>
 
