@@ -232,7 +232,8 @@ interface DataStore {
 }
 
 export const useDataStore = create<DataStore>((set, get) => ({
-  // Default Mock Users - Static as no backend routes exist to register / delete users in front
+  isGovernanceLoading: false,
+  // Default Mock Data
   users: [
     {
       id: 'usr-1',

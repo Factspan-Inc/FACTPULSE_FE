@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useDataStore } from '../../store/data-store';
 import GovernanceKPICard from './components/GovernanceKPICard';
 import ComplianceAlerts from './components/ComplianceAlerts';
-import GovernanceActivityTracker, { type ActivityRow } from './components/GovernanceActivityTracker';
+import GovernanceActivityTracker, {
+  type ActivityRow,
+} from './components/GovernanceActivityTracker';
 import GovernanceTrends from './components/GovernanceTrends';
 import RisksActions, { type RiskItem, type ActionItem } from './components/RisksActions';
 import GovernanceSummary from './components/GovernanceSummary';
@@ -16,12 +18,42 @@ const CHECKPOINT_META: Record<
   STANDUP: { label: 'Daily Stand-Up', frequency: 'Daily', owner: 'Delivery Lead', icon: '☀️' },
   WEEKLY_NOTE: { label: 'Weekly Notes', frequency: 'Weekly', owner: 'Account Lead', icon: '📝' },
   WBR: { label: 'Weekly Business Review', frequency: 'Weekly', owner: 'Account Lead', icon: '📊' },
-  FBR: { label: 'Fortnightly Business Review', frequency: 'Bi-Weekly', owner: 'Delivery Lead', icon: '📅' },
-  MBR: { label: 'Monthly Business Review', frequency: 'Monthly', owner: 'Account Lead', icon: '📋' },
-  QBR: { label: 'Quarterly Business Review', frequency: 'Quarterly', owner: 'Executive', icon: '🏆' },
-  STAKEHOLDER_1X1: { label: 'Stakeholder 1:1', frequency: 'Monthly', owner: 'Account Lead', icon: '🤝' },
-  SECURITY_REVIEW: { label: 'Security Review', frequency: 'Quarterly', owner: 'Delivery Lead', icon: '🔒' },
-  NPS_FEEDBACK: { label: 'NPS Feedback Survey', frequency: 'Quarterly', owner: 'Account Lead', icon: '⭐' },
+  FBR: {
+    label: 'Fortnightly Business Review',
+    frequency: 'Bi-Weekly',
+    owner: 'Delivery Lead',
+    icon: '📅',
+  },
+  MBR: {
+    label: 'Monthly Business Review',
+    frequency: 'Monthly',
+    owner: 'Account Lead',
+    icon: '📋',
+  },
+  QBR: {
+    label: 'Quarterly Business Review',
+    frequency: 'Quarterly',
+    owner: 'Executive',
+    icon: '🏆',
+  },
+  STAKEHOLDER_1X1: {
+    label: 'Stakeholder 1:1',
+    frequency: 'Monthly',
+    owner: 'Account Lead',
+    icon: '🤝',
+  },
+  SECURITY_REVIEW: {
+    label: 'Security Review',
+    frequency: 'Quarterly',
+    owner: 'Delivery Lead',
+    icon: '🔒',
+  },
+  NPS_FEEDBACK: {
+    label: 'NPS Feedback Survey',
+    frequency: 'Quarterly',
+    owner: 'Account Lead',
+    icon: '⭐',
+  },
   EMPLOYEE_1X1: { label: 'Employee 1:1', frequency: 'Monthly', owner: 'Delivery Lead', icon: '👥' },
 };
 
@@ -44,9 +76,17 @@ export default function GovernanceCenterPage() {
     actions,
     completeGovernanceRecord,
     recalculateGovernance,
+    fetchGovernanceActivities,
+    isGovernanceLoading,
     updateRisk,
     updateAction,
   } = useDataStore();
+
+  useEffect(() => {
+    fetchGovernanceActivities().catch(() => {
+      // Keep using mock state if backend fetch is unavailable.
+    });
+  }, [fetchGovernanceActivities]);
 
   const [activeTab, setActiveTab] = useState<'overview' | 'activity' | 'risks' | 'trends'>(
     'overview'
@@ -114,7 +154,15 @@ export default function GovernanceCenterPage() {
         };
       }),
     ...accounts
-      .filter((a) => a.ragStatus === 'AMBER' && !governanceRecords.some((r) => r.status === 'OVERDUE' && projects.find((p) => p.accountId === a.id && p.id === r.projectId)))
+      .filter(
+        (a) =>
+          a.ragStatus === 'AMBER' &&
+          !governanceRecords.some(
+            (r) =>
+              r.status === 'OVERDUE' &&
+              projects.find((p) => p.accountId === a.id && p.id === r.projectId)
+          )
+      )
       .map((a) => ({
         id: `alert-amber-${a.id}`,
         severity: 'WARNING' as const,
@@ -169,12 +217,12 @@ export default function GovernanceCenterPage() {
   });
 
   /* ─── Handlers ───────────────────────────────────────────────────────────── */
-  const handleMarkComplete = (id: string) => {
+  const handleMarkComplete = async (id: string) => {
     const rec = governanceRecords.find((r) => r.id === id);
-    if (rec) {
-      completeGovernanceRecord(id, 'Marked done via Governance Command Center.');
-      recalculateGovernance(rec.projectId);
-    }
+    if (!rec) return;
+
+    await completeGovernanceRecord(id, 'Marked done via Governance Command Center.');
+    recalculateGovernance(rec.projectId);
   };
 
   const handleResolveRisk = (id: string) => updateRisk(id, { status: 'RESOLVED' });
@@ -253,7 +301,9 @@ export default function GovernanceCenterPage() {
           }}
         >
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+            <div
+              style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}
+            >
               <span
                 style={{
                   fontSize: '10px',
@@ -278,11 +328,20 @@ export default function GovernanceCenterPage() {
                 Live · Updated just now
               </span>
             </div>
-            <h1 style={{ margin: 0, fontSize: '26px', fontWeight: 800, color: '#FFFFFF', lineHeight: 1.2 }}>
+            <h1
+              style={{
+                margin: 0,
+                fontSize: '26px',
+                fontWeight: 800,
+                color: '#FFFFFF',
+                lineHeight: 1.2,
+              }}
+            >
               Delivery Governance Command Center
             </h1>
             <p style={{ margin: '6px 0 0 0', fontSize: '14px', color: 'rgba(255,255,255,0.65)' }}>
-              {accounts.length} accounts · {projects.length} active projects · {totalRecords} governance checkpoints tracked
+              {accounts.length} accounts · {projects.length} active projects · {totalRecords}{' '}
+              governance checkpoints tracked
             </p>
           </div>
 
@@ -297,7 +356,14 @@ export default function GovernanceCenterPage() {
                 textAlign: 'center',
               }}
             >
-              <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.6)', fontWeight: 600, marginBottom: '4px' }}>
+              <div
+                style={{
+                  fontSize: '11px',
+                  color: 'rgba(255,255,255,0.6)',
+                  fontWeight: 600,
+                  marginBottom: '4px',
+                }}
+              >
                 Portfolio Health
               </div>
               <div
@@ -308,8 +374,8 @@ export default function GovernanceCenterPage() {
                     overallRAG === 'GREEN'
                       ? '#4ade80'
                       : overallRAG === 'AMBER'
-                      ? '#fbbf24'
-                      : '#f87171',
+                        ? '#fbbf24'
+                        : '#f87171',
                 }}
               >
                 {overallRAG === 'GREEN' ? '🟢' : overallRAG === 'AMBER' ? '🟡' : '🔴'} {overallRAG}
@@ -419,7 +485,7 @@ export default function GovernanceCenterPage() {
         </button>
         <button onClick={() => setActiveTab('risks')} style={tabStyle(activeTab === 'risks')}>
           🚨 Risks & Actions
-          {(openRisksCount + pendingActionsCount) > 0 && (
+          {openRisksCount + pendingActionsCount > 0 && (
             <span
               style={{
                 marginLeft: '6px',
@@ -469,7 +535,8 @@ export default function GovernanceCenterPage() {
                 style={{
                   padding: '20px 24px',
                   borderBottom: '1px solid #E4E7EC',
-                  background: 'linear-gradient(135deg, rgba(13,42,102,0.02) 0%, rgba(246,139,31,0.02) 100%)',
+                  background:
+                    'linear-gradient(135deg, rgba(13,42,102,0.02) 0%, rgba(246,139,31,0.02) 100%)',
                 }}
               >
                 <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: '#0D2A66' }}>
@@ -479,7 +546,14 @@ export default function GovernanceCenterPage() {
                   Real-time compliance posture across all managed accounts
                 </p>
               </div>
-              <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div
+                style={{
+                  padding: '20px 24px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '16px',
+                }}
+              >
                 {accounts.map((acc) => {
                   const accProjects = projects.filter((p) => p.accountId === acc.id);
                   const ragConfig = {
@@ -507,13 +581,26 @@ export default function GovernanceCenterPage() {
                         e.currentTarget.style.borderColor = '#E4E7EC';
                       }}
                     >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                      <div
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          marginBottom: '12px',
+                        }}
+                      >
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                           {acc.logoUrl ? (
                             <img
                               src={acc.logoUrl}
                               alt={acc.name}
-                              style={{ width: '32px', height: '32px', borderRadius: '8px', objectFit: 'cover', border: '1px solid #E4E7EC' }}
+                              style={{
+                                width: '32px',
+                                height: '32px',
+                                borderRadius: '8px',
+                                objectFit: 'cover',
+                                border: '1px solid #E4E7EC',
+                              }}
                             />
                           ) : (
                             <div
@@ -534,7 +621,9 @@ export default function GovernanceCenterPage() {
                             </div>
                           )}
                           <div>
-                            <div style={{ fontWeight: 700, color: '#0D2A66', fontSize: '14px' }}>{acc.name}</div>
+                            <div style={{ fontWeight: 700, color: '#0D2A66', fontSize: '14px' }}>
+                              {acc.name}
+                            </div>
                             <div style={{ fontSize: '11px', color: '#64748b' }}>
                               {accProjects.length} project{accProjects.length !== 1 ? 's' : ''}
                             </div>
@@ -551,7 +640,12 @@ export default function GovernanceCenterPage() {
                             border: `1px solid ${rc.border}`,
                           }}
                         >
-                          {acc.ragStatus === 'GREEN' ? '🟢' : acc.ragStatus === 'AMBER' ? '🟡' : '🔴'} {acc.ragStatus}
+                          {acc.ragStatus === 'GREEN'
+                            ? '🟢'
+                            : acc.ragStatus === 'AMBER'
+                              ? '🟡'
+                              : '🔴'}{' '}
+                          {acc.ragStatus}
                         </span>
                       </div>
 
@@ -561,11 +655,26 @@ export default function GovernanceCenterPage() {
                         { label: 'Compliance Score', value: acc.complianceScore, color: '#F68B1F' },
                       ].map((bar) => (
                         <div key={bar.label} style={{ marginBottom: '8px' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#64748b', marginBottom: '3px' }}>
+                          <div
+                            style={{
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              fontSize: '11px',
+                              color: '#64748b',
+                              marginBottom: '3px',
+                            }}
+                          >
                             <span>{bar.label}</span>
                             <span style={{ fontWeight: 700, color: '#334155' }}>{bar.value}%</span>
                           </div>
-                          <div style={{ height: '5px', background: '#e2e8f0', borderRadius: '3px', overflow: 'hidden' }}>
+                          <div
+                            style={{
+                              height: '5px',
+                              background: '#e2e8f0',
+                              borderRadius: '3px',
+                              overflow: 'hidden',
+                            }}
+                          >
                             <div
                               style={{
                                 height: '100%',
@@ -622,9 +731,15 @@ export default function GovernanceCenterPage() {
               `${projects.filter((p) => p.health === 'GREEN').length} of ${projects.length} projects on GREEN health`,
             ]}
             keyRisks={[
-              ...(overdueCount > 0 ? [`${overdueCount} overdue checkpoint(s) require immediate resolution`] : []),
-              ...(openRisksCount > 0 ? [`${openRisksCount} open risk(s) with no resolved mitigation`] : []),
-              ...(accounts.some((a) => a.ragStatus === 'RED') ? ['Baptist Health account is RED — escalation recommended'] : []),
+              ...(overdueCount > 0
+                ? [`${overdueCount} overdue checkpoint(s) require immediate resolution`]
+                : []),
+              ...(openRisksCount > 0
+                ? [`${openRisksCount} open risk(s) with no resolved mitigation`]
+                : []),
+              ...(accounts.some((a) => a.ragStatus === 'RED')
+                ? ['Baptist Health account is RED — escalation recommended']
+                : []),
             ].slice(0, 3)}
             upcomingEvents={[
               { date: '2026-06-25', event: "Macy's Stakeholder 1:1", type: 'MEETING' },
@@ -638,10 +753,7 @@ export default function GovernanceCenterPage() {
 
       {/* ── TAB: Activity Tracker ──────────────────────────────────────────── */}
       {activeTab === 'activity' && (
-        <GovernanceActivityTracker
-          activities={activityRows}
-          onMarkComplete={handleMarkComplete}
-        />
+        <GovernanceActivityTracker activities={activityRows} onMarkComplete={handleMarkComplete} />
       )}
 
       {/* ── TAB: Risks & Actions ──────────────────────────────────────────── */}
