@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import api from '../api';
 
 // Types representing Database Tables
 export interface User {
@@ -14,8 +13,10 @@ export interface Account {
   id: string;
   name: string;
   logoUrl?: string;
+  healthScore: number;
+  deliveryScore: number;
   governanceScore: number;
-  complianceScore: number;
+  customerScore: number;
   ragStatus: 'GREEN' | 'AMBER' | 'RED';
 }
 
@@ -42,21 +43,18 @@ export interface Stakeholder {
 export interface Project {
   id: string;
   accountId: string;
-  buyingCenterId: string;
   name: string;
   status: 'ACTIVE' | 'ARCHIVED';
   health: 'GREEN' | 'AMBER' | 'RED';
-  complianceRate: number;
-  details?: string;
-  lead?: string;
-  projectType: 'CUSTOMER_MANAGED' | 'INTERNAL_TEAM_MANAGED';
-  seniorDirector?: string;
-  vicePresident?: string;
-  supervisor?: string;
-  sprintStartDate?: string;
-  sprintEndDate?: string;
-  deliveryPerformance?: number;
-  overflow?: number;
+  managementType: 'FS_MANAGED' | 'CLIENT_MANAGED';
+  sprintVelocity?: number;
+  throughputRate?: number;
+  staffingCount?: number;
+  staffingHealth?: number;
+  wbrCompliance?: boolean;
+  mbrCompliance?: boolean;
+  qbrCompliance?: boolean;
+  npsScore?: number;
 }
 
 export interface Artifact {
@@ -67,7 +65,6 @@ export interface Artifact {
   uploadedAt: string;
   size: string;
   status: 'PROCESSING' | 'COMPLETED';
-  category?: 'WBR' | 'MOM' | 'ARCHITECTURE' | 'NOTE';
 }
 
 export interface Risk {
@@ -108,27 +105,27 @@ export interface GovernanceRecord {
   id: string;
   projectId: string;
   type:
-    | 'STANDUP'
-    | 'WEEKLY_NOTE'
+    | 'DAILY_STANDUP'
+    | 'WEEKLY_NOTES'
     | 'WBR'
     | 'FBR'
     | 'MBR'
     | 'QBR'
     | 'STAKEHOLDER_1X1'
+    | 'VP_CONNECT'
     | 'SECURITY_REVIEW'
     | 'NPS_FEEDBACK'
     | 'EMPLOYEE_1X1';
-  title: string;
-  dueDate: string;
-  completedAt?: string;
-  status: 'PENDING' | 'COMPLETED' | 'OVERDUE';
+  activityDate: string;
+  isCompliant: boolean;
   notes?: string;
+  complianceNotes?: string;
+  uploadedFileUrl?: string;
 }
 
 export interface AIReport {
   id: string;
   projectId: string;
-  accountId?: string;
   type: 'WEEKLY_NOTES' | 'WBR' | 'GOVERNANCE_SUMMARY' | 'ACCOUNT_DIGEST';
   content: string;
   createdAt: string;
@@ -150,19 +147,6 @@ interface DataStore {
   governanceRecords: GovernanceRecord[];
   aiReports: AIReport[];
 
-  // Fetch Actions
-  fetchAccounts: () => Promise<void>;
-  fetchBuyingCenters: () => Promise<void>;
-  fetchStakeholders: () => Promise<void>;
-  fetchProjects: () => Promise<void>;
-  fetchArtifacts: () => Promise<void>;
-  fetchRisks: () => Promise<void>;
-  fetchActions: () => Promise<void>;
-  fetchDecisions: () => Promise<void>;
-  fetchMilestones: () => Promise<void>;
-  fetchGovernanceRecords: () => Promise<void>;
-  fetchAIReports: () => Promise<void>;
-
   // CRUD Actions
   // Users
   addUser: (user: Omit<User, 'id'>) => void;
@@ -171,68 +155,67 @@ interface DataStore {
 
   // Accounts
   addAccount: (
-    account: Omit<Account, 'id' | 'governanceScore' | 'complianceScore' | 'ragStatus'>
-  ) => Promise<void>;
-  updateAccount: (id: string, updates: Partial<Account>) => Promise<void>;
-  deleteAccount: (id: string) => Promise<void>;
+    account: Omit<Account, 'id' | 'healthScore' | 'deliveryScore' | 'governanceScore' | 'customerScore' | 'ragStatus'>
+  ) => Promise<string>;
+  updateAccount: (id: string, updates: Partial<Account>) => void;
+  deleteAccount: (id: string) => void;
 
   // Buying Centers
-  addBuyingCenter: (center: Omit<BuyingCenter, 'id' | 'health' | 'sentiment'>) => Promise<void>;
-  updateBuyingCenter: (id: string, updates: Partial<BuyingCenter>) => Promise<void>;
-  deleteBuyingCenter: (id: string) => Promise<void>;
+  addBuyingCenter: (center: Omit<BuyingCenter, 'id'>) => void;
+  updateBuyingCenter: (id: string, updates: Partial<BuyingCenter>) => void;
+  deleteBuyingCenter: (id: string) => void;
 
   // Stakeholders
-  addStakeholder: (stakeholder: Omit<Stakeholder, 'id' | 'lastConnectDate' | 'nextScheduledConnect'>) => Promise<void>;
-  updateStakeholder: (id: string, updates: Partial<Stakeholder>) => Promise<void>;
-  deleteStakeholder: (id: string) => Promise<void>;
+  addStakeholder: (stakeholder: Omit<Stakeholder, 'id'>) => void;
+  updateStakeholder: (id: string, updates: Partial<Stakeholder>) => void;
+  deleteStakeholder: (id: string) => void;
 
   // Projects
-  addProject: (project: Omit<Project, 'id' | 'buyingCenterId'>) => Promise<void>;
-  updateProject: (id: string, updates: Partial<Project>) => Promise<void>;
-  deleteProject: (id: string) => Promise<void>;
+  addProject: (project: Omit<Project, 'id'>) => Promise<string>;
+  updateProject: (id: string, updates: Partial<Project>) => void;
+  deleteProject: (id: string) => void;
 
   // Artifacts
   uploadArtifact: (
     projectId: string,
-    file: { name: string; type: 'PDF' | 'PPT' | 'DOC'; size: string; category?: 'WBR' | 'MOM' | 'ARCHITECTURE' | 'NOTE' }
-  ) => Promise<string>;
-  deleteArtifact: (id: string) => Promise<void>;
+    file: { name: string; type: 'PDF' | 'PPT' | 'DOC'; size: string }
+  ) => string;
+  deleteArtifact: (id: string) => void;
 
-  // Risks
-  addRisk: (projectId: string, risk: Omit<Risk, 'id' | 'projectId' | 'status'>) => Promise<void>;
-  updateRisk: (id: string, updates: Partial<Risk>) => Promise<void>;
-  deleteRisk: (id: string) => Promise<void>;
+  // Memory (Risks, Actions, Decisions, Milestones)
+  addRisk: (projectId: string, risk: Omit<Risk, 'id' | 'projectId' | 'status'>) => void;
+  updateRisk: (id: string, updates: Partial<Risk>) => void;
+  deleteRisk: (id: string) => void;
 
-  // Actions
-  addAction: (projectId: string, action: Omit<Action, 'id' | 'projectId' | 'status'>) => Promise<void>;
-  updateAction: (id: string, updates: Partial<Action>) => Promise<void>;
-  deleteAction: (id: string) => Promise<void>;
+  addAction: (projectId: string, action: Omit<Action, 'id' | 'projectId' | 'status'>) => void;
+  updateAction: (id: string, updates: Partial<Action>) => void;
+  deleteAction: (id: string) => void;
 
-  // Decisions
-  addDecision: (projectId: string, decision: Omit<Decision, 'id' | 'projectId'>) => Promise<void>;
-  updateDecision: (id: string, updates: Partial<Decision>) => Promise<void>;
-  deleteDecision: (id: string) => Promise<void>;
+  addDecision: (projectId: string, decision: Omit<Decision, 'id' | 'projectId'>) => void;
+  updateDecision: (id: string, updates: Partial<Decision>) => void;
+  deleteDecision: (id: string) => void;
 
-  // Milestones
   addMilestone: (
     projectId: string,
     milestone: Omit<Milestone, 'id' | 'projectId' | 'status'>
-  ) => Promise<void>;
-  updateMilestone: (id: string, updates: Partial<Milestone>) => Promise<void>;
-  deleteMilestone: (id: string) => Promise<void>;
+  ) => void;
+  updateMilestone: (id: string, updates: Partial<Milestone>) => void;
+  deleteMilestone: (id: string) => void;
 
   // Governance
-  completeGovernanceRecord: (id: string, notes?: string) => Promise<void>;
-  recalculateGovernance: (projectId: string) => Promise<void>;
+  completeGovernanceRecord: (id: string, notes?: string) => void;
+  recalculateGovernance: (projectId: string) => void;
 
   // AI Workspace
-  addAIReport: (projectId: string, type: AIReport['type'], content: string, accountId?: string) => Promise<string>;
-  updateAIReport: (id: string, content: string) => Promise<void>;
-  publishAIReport: (id: string) => Promise<void>;
+  addAIReport: (projectId: string, type: AIReport['type'], content: string) => string;
+  updateAIReport: (id: string, content: string) => void;
+  publishAIReport: (id: string) => void;
+
+  // Backend Sync
+  syncWithBackend: () => Promise<void>;
 }
 
 export const useDataStore = create<DataStore>((set, get) => ({
-  isGovernanceLoading: false,
   // Default Mock Data
   users: [
     {
@@ -264,144 +247,260 @@ export const useDataStore = create<DataStore>((set, get) => ({
       permissions: ['READ_ONLY'],
     },
   ],
-  
-  // Dynamic Arrays initialized to empty (fetched from backend)
-  accounts: [],
-  buyingCenters: [],
-  stakeholders: [],
-  projects: [],
-  artifacts: [],
-  risks: [],
-  actions: [],
-  decisions: [],
-  milestones: [],
+  accounts: [
+    {
+      id: 'acc-1',
+      name: "Macy's",
+      logoUrl:
+        'https://images.unsplash.com/photo-1599305445671-ac291c95aba9?auto=format&fit=crop&w=100&h=100&q=80',
+      healthScore: 90,
+      deliveryScore: 95,
+      governanceScore: 88,
+      customerScore: 87,
+      ragStatus: 'GREEN',
+    },
+    {
+      id: 'acc-2',
+      name: 'CVS Health',
+      logoUrl:
+        'https://images.unsplash.com/photo-1516841273335-e39b37888115?auto=format&fit=crop&w=100&h=100&q=80',
+      healthScore: 69,
+      deliveryScore: 65,
+      governanceScore: 68,
+      customerScore: 74,
+      ragStatus: 'AMBER',
+    },
+    {
+      id: 'acc-3',
+      name: 'Baptist Health',
+      logoUrl:
+        'https://images.unsplash.com/photo-1505751172876-fa1923c5c528?auto=format&fit=crop&w=100&h=100&q=80',
+      healthScore: 43,
+      deliveryScore: 40,
+      governanceScore: 42,
+      customerScore: 47,
+      ragStatus: 'RED',
+    },
+  ],
+  buyingCenters: [
+    {
+      id: 'bc-1',
+      accountId: 'acc-1',
+      name: "Macy's Digital Front",
+      health: 85,
+      sentiment: 'POSITIVE',
+    },
+    {
+      id: 'bc-2',
+      accountId: 'acc-1',
+      name: "Macy's Supply Chain",
+      health: 90,
+      sentiment: 'POSITIVE',
+    },
+    { id: 'bc-3', accountId: 'acc-2', name: 'CVS Digital', health: 70, sentiment: 'NEUTRAL' },
+    {
+      id: 'bc-4',
+      accountId: 'acc-2',
+      name: 'CVS Retail Pharmacy',
+      health: 65,
+      sentiment: 'NEGATIVE',
+    },
+    {
+      id: 'bc-5',
+      accountId: 'acc-3',
+      name: 'Baptist Patient Portal',
+      health: 40,
+      sentiment: 'NEGATIVE',
+    },
+  ],
+  stakeholders: [
+    {
+      id: 'stk-1',
+      buyingCenterId: 'bc-1',
+      name: 'Jane Doe',
+      role: 'VP of Digital Engineering',
+      email: 'jane.doe@macys.com',
+      sentiment: 'POSITIVE',
+      lastConnectDate: '2026-06-12',
+      nextScheduledConnect: '2026-06-25',
+    },
+    {
+      id: 'stk-2',
+      buyingCenterId: 'bc-1',
+      name: 'Bob Johnson',
+      role: 'Engineering Director',
+      email: 'bob.johnson@macys.com',
+      sentiment: 'NEUTRAL',
+      lastConnectDate: '2026-06-15',
+      nextScheduledConnect: '2026-06-22',
+      parentId: 'stk-1',
+    },
+    {
+      id: 'stk-3',
+      buyingCenterId: 'bc-3',
+      name: 'Alice Smith',
+      role: 'Product Executive',
+      email: 'alice.smith@cvs.com',
+      sentiment: 'NEUTRAL',
+      lastConnectDate: '2026-06-10',
+      nextScheduledConnect: '2026-06-24',
+    },
+    {
+      id: 'stk-4',
+      buyingCenterId: 'bc-4',
+      name: 'Tom Hardy',
+      role: 'VP Operations',
+      email: 'tom.hardy@cvs.com',
+      sentiment: 'NEGATIVE',
+      lastConnectDate: '2026-06-01',
+      nextScheduledConnect: '2026-06-19',
+    },
+    {
+      id: 'stk-5',
+      buyingCenterId: 'bc-5',
+      name: 'Dr. Gregory House',
+      role: 'CTO Baptist',
+      email: 'gregory@baptist.org',
+      sentiment: 'NEGATIVE',
+      lastConnectDate: '2026-05-20',
+      nextScheduledConnect: '2026-06-18',
+    },
+  ],
+  projects: [
+    {
+      id: 'proj-1',
+      accountId: 'acc-1',
+      name: "Macy's Loyalty Portal",
+      status: 'ACTIVE',
+      health: 'GREEN',
+      managementType: 'FS_MANAGED',
+      sprintVelocity: 15,
+      staffingHealth: 95,
+    },
+    {
+      id: 'proj-2',
+      accountId: 'acc-1',
+      name: "Macy's Mobile Checkout",
+      status: 'ACTIVE',
+      health: 'GREEN',
+      managementType: 'FS_MANAGED',
+      sprintVelocity: 14,
+      staffingHealth: 90,
+    },
+    {
+      id: 'proj-3',
+      accountId: 'acc-2',
+      name: 'CVS Caremark Integration',
+      status: 'ACTIVE',
+      health: 'AMBER',
+      managementType: 'CLIENT_MANAGED',
+    },
+    {
+      id: 'proj-4',
+      accountId: 'acc-2',
+      name: 'CVS Vaccine Scheduler',
+      status: 'ACTIVE',
+      health: 'GREEN',
+      managementType: 'FS_MANAGED',
+      sprintVelocity: 12,
+      staffingHealth: 85,
+    },
+    {
+      id: 'proj-5',
+      accountId: 'acc-3',
+      name: 'Baptist EHR Modernization',
+      status: 'ACTIVE',
+      health: 'RED',
+      managementType: 'FS_MANAGED',
+      sprintVelocity: 8,
+      staffingHealth: 42,
+    },
+  ],
+  artifacts: [
+    {
+      id: 'art-1',
+      projectId: 'proj-1',
+      name: 'Macy_MOM_Week24.docx',
+      type: 'DOC',
+      uploadedAt: '2026-06-15 10:00',
+      size: '2.4 MB',
+      status: 'COMPLETED',
+    },
+    {
+      id: 'art-2',
+      projectId: 'proj-1',
+      name: 'LoyaltyPortal_WBR_Q2.pptx',
+      type: 'PPT',
+      uploadedAt: '2026-06-14 14:30',
+      size: '8.1 MB',
+      status: 'COMPLETED',
+    },
+  ],
+  risks: [
+    {
+      id: 'risk-1',
+      projectId: 'proj-5',
+      description: 'GCP connection delays for EHR system API sandbox',
+      severity: 'HIGH',
+      mitigationPlan: 'Request direct access whitelist from Baptist Network team',
+      status: 'OPEN',
+    },
+    {
+      id: 'risk-2',
+      projectId: 'proj-3',
+      description: 'Dependencies on third-party security scanner tools',
+      severity: 'MEDIUM',
+      mitigationPlan: 'Parallelize development and mock scanning data logs',
+      status: 'OPEN',
+    },
+  ],
+  actions: [
+    {
+      id: 'act-1',
+      projectId: 'proj-1',
+      description: "Review WBR draft with Macy's lead sponsor",
+      assignee: 'Account Lead',
+      dueDate: '2026-06-20',
+      status: 'PENDING',
+    },
+    {
+      id: 'act-2',
+      projectId: 'proj-5',
+      description: 'Schedule meeting with Dr. Gregory House regarding sentiment drop',
+      assignee: 'Delivery Lead',
+      dueDate: '2026-06-22',
+      status: 'PENDING',
+    },
+  ],
+  decisions: [
+    {
+      id: 'dec-1',
+      projectId: 'proj-1',
+      description: 'Approved migrating core micro-frontends from legacy system to React SPA',
+      madeBy: 'Jane Doe (VP)',
+      date: '2026-06-05',
+    },
+  ],
+  milestones: [
+    {
+      id: 'ms-1',
+      projectId: 'proj-1',
+      name: 'Deploy Core Portal',
+      dueDate: '2026-06-30',
+      status: 'UPCOMING',
+    },
+    {
+      id: 'ms-2',
+      projectId: 'proj-5',
+      name: 'Sandbox Integration Phase 1',
+      dueDate: '2026-06-15',
+      status: 'DELAYED',
+    },
+  ],
   governanceRecords: [],
   aiReports: [],
 
-  // ── Fetch Actions Implementation ──
-  
-  fetchAccounts: async () => {
-    try {
-      const response = await api.get('/accounts');
-      if (response.data?.success && response.data.data?.items) {
-        set({ accounts: response.data.data.items });
-      }
-    } catch (err) {
-      console.error('Failed to fetch accounts:', err);
-    }
-  },
-
-  fetchBuyingCenters: async () => {
-    try {
-      const response = await api.get('/buying-centers');
-      if (response.data?.success && response.data.data?.items) {
-        set({ buyingCenters: response.data.data.items });
-      }
-    } catch (err) {
-      console.error('Failed to fetch buying centers:', err);
-    }
-  },
-
-  fetchStakeholders: async () => {
-    try {
-      const response = await api.get('/stakeholders');
-      if (response.data?.success && response.data.data?.items) {
-        set({ stakeholders: response.data.data.items });
-      }
-    } catch (err) {
-      console.error('Failed to fetch stakeholders:', err);
-    }
-  },
-
-  fetchProjects: async () => {
-    try {
-      const response = await api.get('/projects');
-      if (response.data?.success && response.data.data?.items) {
-        set({ projects: response.data.data.items });
-      }
-    } catch (err) {
-      console.error('Failed to fetch projects:', err);
-    }
-  },
-
-  fetchArtifacts: async () => {
-    try {
-      const response = await api.get('/artifacts');
-      if (response.data?.success && response.data.data?.items) {
-        set({ artifacts: response.data.data.items });
-      }
-    } catch (err) {
-      console.error('Failed to fetch artifacts:', err);
-    }
-  },
-
-  fetchRisks: async () => {
-    try {
-      const response = await api.get('/risks');
-      if (response.data?.success && response.data.data?.items) {
-        set({ risks: response.data.data.items });
-      }
-    } catch (err) {
-      console.error('Failed to fetch risks:', err);
-    }
-  },
-
-  fetchActions: async () => {
-    try {
-      const response = await api.get('/action-items');
-      if (response.data?.success && response.data.data?.items) {
-        set({ actions: response.data.data.items });
-      }
-    } catch (err) {
-      console.error('Failed to fetch actions:', err);
-    }
-  },
-
-  fetchDecisions: async () => {
-    try {
-      const response = await api.get('/decisions');
-      if (response.data?.success && response.data.data?.items) {
-        set({ decisions: response.data.data.items });
-      }
-    } catch (err) {
-      console.error('Failed to fetch decisions:', err);
-    }
-  },
-
-  fetchMilestones: async () => {
-    try {
-      const response = await api.get('/milestones');
-      if (response.data?.success && response.data.data?.items) {
-        set({ milestones: response.data.data.items });
-      }
-    } catch (err) {
-      console.error('Failed to fetch milestones:', err);
-    }
-  },
-
-  fetchGovernanceRecords: async () => {
-    try {
-      const response = await api.get('/governance-activities');
-      if (response.data?.success && response.data.data?.items) {
-        set({ governanceRecords: response.data.data.items });
-      }
-    } catch (err) {
-      console.error('Failed to fetch governance activities:', err);
-    }
-  },
-
-  fetchAIReports: async () => {
-    try {
-      const response = await api.get('/ai-drafts');
-      if (response.data?.success && response.data.data?.items) {
-        set({ aiReports: response.data.data.items });
-      }
-    } catch (err) {
-      console.error('Failed to fetch AI reports:', err);
-    }
-  },
-
-  // ── Users CRUD (In Memory static fallbacks) ──
+  // CRUD Actions Implementation
   addUser: (user) =>
     set((state) => ({
       users: [...state.users, { ...user, id: `usr-${state.users.length + 1}` }],
@@ -415,526 +514,350 @@ export const useDataStore = create<DataStore>((set, get) => ({
       users: state.users.filter((u) => u.id !== id),
     })),
 
-  // ── Accounts CRUD ──
   addAccount: async (acc) => {
     try {
-      const response = await api.post('/accounts', acc);
-      if (response.data?.success && response.data.data) {
-        set((state) => ({ accounts: [...state.accounts, response.data.data] }));
+      const res = await fetch('http://localhost:8080/api/v1/accounts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...acc,
+          healthScore: 100,
+          deliveryScore: 100,
+          governanceScore: 100,
+          customerScore: 100,
+          ragStatus: 'GREEN',
+        }),
+      });
+      if (res.ok) {
+        const createdAccount = await res.json();
+        set((state) => ({ accounts: [...state.accounts, createdAccount] }));
+        return createdAccount.id;
+      } else {
+        throw new Error('Failed to create account');
       }
-    } catch (err) {
-      console.error('Failed to add account:', err);
+    } catch (e) {
+      console.error(e);
+      // fallback to mock creation
+      const mockId = `acc-${Date.now()}`;
+      set((state) => ({
+        accounts: [
+          ...state.accounts,
+          {
+            ...acc,
+            id: mockId,
+            healthScore: 100,
+            deliveryScore: 100,
+            governanceScore: 100,
+            customerScore: 100,
+            ragStatus: 'GREEN',
+          },
+        ],
+      }));
+      return mockId;
     }
   },
-  updateAccount: async (id, updates) => {
-    try {
-      const response = await api.patch(`/accounts/${id}`, updates);
-      if (response.data?.success && response.data.data) {
-        set((state) => ({
-          accounts: state.accounts.map((a) => (a.id === id ? response.data.data : a)),
-        }));
-      }
-    } catch (err) {
-      console.error('Failed to update account:', err);
-    }
-  },
-  deleteAccount: async (id) => {
-    try {
-      const response = await api.delete(`/accounts/${id}`);
-      if (response.data?.success) {
-        set((state) => ({
-          accounts: state.accounts.filter((a) => a.id !== id),
-        }));
-      }
-    } catch (err) {
-      console.error('Failed to delete account:', err);
-    }
-  },
+  updateAccount: (id, updates) =>
+    set((state) => ({
+      accounts: state.accounts.map((a) => (a.id === id ? { ...a, ...updates } : a)),
+    })),
+  deleteAccount: (id) =>
+    set((state) => ({
+      accounts: state.accounts.filter((a) => a.id !== id),
+    })),
 
-  // ── Buying Centers CRUD ──
-  addBuyingCenter: async (center) => {
-    try {
-      const response = await api.post('/buying-centers', center);
-      if (response.data?.success && response.data.data) {
-        set((state) => ({
-          buyingCenters: [...state.buyingCenters, response.data.data],
-        }));
-      }
-    } catch (err) {
-      console.error('Failed to add buying center:', err);
-    }
-  },
-  updateBuyingCenter: async (id, updates) => {
-    try {
-      const response = await api.patch(`/buying-centers/${id}`, updates);
-      if (response.data?.success && response.data.data) {
-        set((state) => ({
-          buyingCenters: state.buyingCenters.map((bc) => (bc.id === id ? response.data.data : bc)),
-        }));
-      }
-    } catch (err) {
-      console.error('Failed to update buying center:', err);
-    }
-  },
-  deleteBuyingCenter: async (id) => {
-    try {
-      const response = await api.delete(`/buying-centers/${id}`);
-      if (response.data?.success) {
-        set((state) => ({
-          buyingCenters: state.buyingCenters.filter((bc) => bc.id !== id),
-        }));
-      }
-    } catch (err) {
-      console.error('Failed to delete buying center:', err);
-    }
-  },
+  addBuyingCenter: (center) =>
+    set((state) => ({
+      buyingCenters: [
+        ...state.buyingCenters,
+        { ...center, id: `bc-${state.buyingCenters.length + 1}` },
+      ],
+    })),
+  updateBuyingCenter: (id, updates) =>
+    set((state) => ({
+      buyingCenters: state.buyingCenters.map((bc) => (bc.id === id ? { ...bc, ...updates } : bc)),
+    })),
+  deleteBuyingCenter: (id) =>
+    set((state) => ({
+      buyingCenters: state.buyingCenters.filter((bc) => bc.id !== id),
+    })),
 
-  // ── Stakeholders CRUD ──
-  addStakeholder: async (stakeholder) => {
-    try {
-      const response = await api.post('/stakeholders', stakeholder);
-      if (response.data?.success && response.data.data) {
-        set((state) => ({
-          stakeholders: [...state.stakeholders, response.data.data],
-        }));
-      }
-    } catch (err) {
-      console.error('Failed to add stakeholder:', err);
-    }
-  },
-  updateStakeholder: async (id, updates) => {
-    try {
-      const response = await api.patch(`/stakeholders/${id}`, updates);
-      if (response.data?.success && response.data.data) {
-        set((state) => ({
-          stakeholders: state.stakeholders.map((s) => (s.id === id ? response.data.data : s)),
-        }));
-      }
-    } catch (err) {
-      console.error('Failed to update stakeholder:', err);
-    }
-  },
-  deleteStakeholder: async (id) => {
-    try {
-      const response = await api.delete(`/stakeholders/${id}`);
-      if (response.data?.success) {
-        set((state) => ({
-          stakeholders: state.stakeholders.filter((s) => s.id !== id),
-        }));
-      }
-    } catch (err) {
-      console.error('Failed to delete stakeholder:', err);
-    }
-  },
+  addStakeholder: (stakeholder) =>
+    set((state) => ({
+      stakeholders: [
+        ...state.stakeholders,
+        { ...stakeholder, id: `stk-${state.stakeholders.length + 1}` },
+      ],
+    })),
+  updateStakeholder: (id, updates) =>
+    set((state) => ({
+      stakeholders: state.stakeholders.map((s) => (s.id === id ? { ...s, ...updates } : s)),
+    })),
+  deleteStakeholder: (id) =>
+    set((state) => ({
+      stakeholders: state.stakeholders.filter((s) => s.id !== id),
+    })),
 
-  // ── Projects CRUD ──
   addProject: async (proj) => {
     try {
-      const response = await api.post('/projects', proj);
-      if (response.data?.success && response.data.data) {
-        const newProj = response.data.data;
-        const projectId = newProj.id;
-        
-        // Generate and seed backend governance activity records
-        const defaultRecords = [
-          {
-            type: 'STANDUP',
-            title: 'Daily Standup Check',
-            dueDate: new Date(Date.now() + 86400000).toISOString().substring(0, 10),
-            status: 'PENDING',
-          },
-          {
-            type: 'WEEKLY_NOTE',
-            title: 'Weekly Note - Week 25',
-            dueDate: new Date(Date.now() + 86400000 * 7).toISOString().substring(0, 10),
-            status: 'PENDING',
-          },
-          {
-            type: 'WBR',
-            title: 'WBR - Week 25',
-            dueDate: new Date(Date.now() + 86400000 * 5).toISOString().substring(0, 10),
-            status: 'PENDING',
-          },
-          {
-            type: 'MBR',
-            title: 'MBR - June 2026',
-            dueDate: new Date(Date.now() + 86400000 * 14).toISOString().substring(0, 10),
-            status: 'PENDING',
-          },
-          {
-            type: 'QBR',
-            title: 'QBR - Q2 2026',
-            dueDate: new Date(Date.now() + 86400000 * 30).toISOString().substring(0, 10),
-            status: 'PENDING',
-          },
-        ];
-
-        // Save records to database sequentially
-        const savedRecords: GovernanceRecord[] = [];
-        for (const record of defaultRecords) {
-          const res = await api.post('/governance-activities', {
-            projectId,
-            ...record,
-          });
-          if (res.data?.success) {
-            savedRecords.push(res.data.data);
-          }
-        }
-
-        set((state) => ({
-          projects: [...state.projects, newProj],
-          governanceRecords: [...state.governanceRecords, ...savedRecords],
-        }));
-      }
-    } catch (err) {
-      console.error('Failed to add project:', err);
-    }
-  },
-
-  updateProject: async (id, updates) => {
-    try {
-      const response = await api.patch(`/projects/${id}`, updates);
-      if (response.data?.success && response.data.data) {
-        const updatedProj = response.data.data;
-        set((state) => ({
-          projects: state.projects.map((p) => (p.id === id ? updatedProj : p)),
-        }));
-      }
-    } catch (err) {
-      console.error('Failed to update project:', err);
-    }
-  },
-
-  deleteProject: async (id) => {
-    try {
-      const response = await api.delete(`/projects/${id}`);
-      if (response.data?.success) {
-        set((state) => ({
-          projects: state.projects.filter((p) => p.id !== id),
-        }));
-      }
-    } catch (err) {
-      console.error('Failed to delete project:', err);
-    }
-  },
-
-  // ── Artifacts CRUD ──
-  uploadArtifact: async (projectId, file) => {
-    const id = `art-${Date.now()}`;
-    try {
-      const response = await api.post('/artifacts', {
-        id,
-        projectId,
-        name: file.name,
-        type: file.type,
-        size: file.size,
-        status: 'PROCESSING',
+      const res = await fetch('http://localhost:8080/api/v1/projects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(proj),
       });
-      if (response.data?.success && response.data.data) {
-        set((state) => ({
-          artifacts: [...state.artifacts, response.data.data],
-        }));
-
-        // Simulate background processing completion
-        setTimeout(async () => {
-          set((state) => ({
-            artifacts: state.artifacts.map((a) => (a.id === id ? { ...a, status: 'COMPLETED' } : a)),
-          }));
-        }, 4000);
+      if (res.ok) {
+        const createdProject = await res.json();
+        set((state) => ({ projects: [...state.projects, createdProject] }));
+        return createdProject.id;
+      } else {
+        throw new Error('Failed to create project');
       }
-    } catch (err) {
-      console.error('Failed to upload artifact:', err);
+    } catch (e) {
+      console.error(e);
+      const mockId = `proj-${Date.now()}`;
+      set((state) => ({
+        projects: [...state.projects, { ...proj, id: mockId }],
+      }));
+      return mockId;
     }
+  },
+  updateProject: (id, updates) =>
+    set((state) => ({
+      projects: state.projects.map((p) => (p.id === id ? { ...p, ...updates } : p)),
+    })),
+  deleteProject: (id) =>
+    set((state) => ({
+      projects: state.projects.filter((p) => p.id !== id),
+    })),
+
+  uploadArtifact: (projectId, file) => {
+    const id = `art-${Date.now()}`;
+    const newArt: Artifact = {
+      id,
+      projectId,
+      name: file.name,
+      type: file.type,
+      uploadedAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
+      size: file.size,
+      status: 'PROCESSING',
+    };
+    set((state) => ({
+      artifacts: [...state.artifacts, newArt],
+    }));
+    // Simulate background processing completion
+    setTimeout(() => {
+      set((state) => ({
+        artifacts: state.artifacts.map((a) => (a.id === id ? { ...a, status: 'COMPLETED' } : a)),
+      }));
+    }, 4000);
     return id;
   },
+  deleteArtifact: (id) =>
+    set((state) => ({
+      artifacts: state.artifacts.filter((a) => a.id !== id),
+    })),
 
-  deleteArtifact: async (id) => {
-    try {
-      const response = await api.delete(`/artifacts/${id}`);
-      if (response.data?.success) {
-        set((state) => ({
-          artifacts: state.artifacts.filter((a) => a.id !== id),
-        }));
-      }
-    } catch (err) {
-      console.error('Failed to delete artifact:', err);
-    }
-  },
+  addRisk: (projectId, risk) =>
+    set((state) => ({
+      risks: [...state.risks, { ...risk, id: `risk-${Date.now()}`, projectId, status: 'OPEN' }],
+    })),
+  updateRisk: (id, updates) =>
+    set((state) => ({
+      risks: state.risks.map((r) => (r.id === id ? { ...r, ...updates } : r)),
+    })),
+  deleteRisk: (id) =>
+    set((state) => ({
+      risks: state.risks.filter((r) => r.id !== id),
+    })),
 
-  // ── Risks CRUD ──
-  addRisk: async (projectId, risk) => {
-    try {
-      const response = await api.post('/risks', { ...risk, projectId });
-      if (response.data?.success && response.data.data) {
-        set((state) => ({
-          risks: [...state.risks, response.data.data],
-        }));
-      }
-    } catch (err) {
-      console.error('Failed to add risk:', err);
-    }
-  },
-  updateRisk: async (id, updates) => {
-    try {
-      const response = await api.patch(`/risks/${id}`, updates);
-      if (response.data?.success && response.data.data) {
-        set((state) => ({
-          risks: state.risks.map((r) => (r.id === id ? response.data.data : r)),
-        }));
-      }
-    } catch (err) {
-      console.error('Failed to update risk:', err);
-    }
-  },
-  deleteRisk: async (id) => {
-    try {
-      const response = await api.delete(`/risks/${id}`);
-      if (response.data?.success) {
-        set((state) => ({
-          risks: state.risks.filter((r) => r.id !== id),
-        }));
-      }
-    } catch (err) {
-      console.error('Failed to delete risk:', err);
-    }
-  },
+  addAction: (projectId, action) =>
+    set((state) => ({
+      actions: [
+        ...state.actions,
+        { ...action, id: `act-${Date.now()}`, projectId, status: 'PENDING' },
+      ],
+    })),
+  updateAction: (id, updates) =>
+    set((state) => ({
+      actions: state.actions.map((a) => (a.id === id ? { ...a, ...updates } : a)),
+    })),
+  deleteAction: (id) =>
+    set((state) => ({
+      actions: state.actions.filter((a) => a.id !== id),
+    })),
 
-  // ── Actions CRUD ──
-  addAction: async (projectId, action) => {
-    try {
-      const response = await api.post('/action-items', { ...action, projectId });
-      if (response.data?.success && response.data.data) {
-        set((state) => ({
-          actions: [...state.actions, response.data.data],
-        }));
-      }
-    } catch (err) {
-      console.error('Failed to add action:', err);
-    }
-  },
-  updateAction: async (id, updates) => {
-    try {
-      const response = await api.patch(`/action-items/${id}`, updates);
-      if (response.data?.success && response.data.data) {
-        set((state) => ({
-          actions: state.actions.map((a) => (a.id === id ? response.data.data : a)),
-        }));
-      }
-    } catch (err) {
-      console.error('Failed to update action:', err);
-    }
-  },
-  deleteAction: async (id) => {
-    try {
-      const response = await api.delete(`/action-items/${id}`);
-      if (response.data?.success) {
-        set((state) => ({
-          actions: state.actions.filter((a) => a.id !== id),
-        }));
-      }
-    } catch (err) {
-      console.error('Failed to delete action:', err);
-    }
-  },
+  addDecision: (projectId, decision) =>
+    set((state) => ({
+      decisions: [...state.decisions, { ...decision, id: `dec-${Date.now()}`, projectId }],
+    })),
+  updateDecision: (id, updates) =>
+    set((state) => ({
+      decisions: state.decisions.map((d) => (d.id === id ? { ...d, ...updates } : d)),
+    })),
+  deleteDecision: (id) =>
+    set((state) => ({
+      decisions: state.decisions.filter((d) => d.id !== id),
+    })),
 
-  // ── Decisions CRUD ──
-  addDecision: async (projectId, decision) => {
-    try {
-      const response = await api.post('/decisions', { ...decision, projectId });
-      if (response.data?.success && response.data.data) {
-        set((state) => ({
-          decisions: [...state.decisions, response.data.data],
-        }));
-      }
-    } catch (err) {
-      console.error('Failed to add decision:', err);
-    }
-  },
-  updateDecision: async (id, updates) => {
-    try {
-      const response = await api.patch(`/decisions/${id}`, updates);
-      if (response.data?.success && response.data.data) {
-        set((state) => ({
-          decisions: state.decisions.map((d) => (d.id === id ? response.data.data : d)),
-        }));
-      }
-    } catch (err) {
-      console.error('Failed to update decision:', err);
-    }
-  },
-  deleteDecision: async (id) => {
-    try {
-      const response = await api.delete(`/decisions/${id}`);
-      if (response.data?.success) {
-        set((state) => ({
-          decisions: state.decisions.filter((d) => d.id !== id),
-        }));
-      }
-    } catch (err) {
-      console.error('Failed to delete decision:', err);
-    }
-  },
+  addMilestone: (projectId, milestone) =>
+    set((state) => ({
+      milestones: [
+        ...state.milestones,
+        { ...milestone, id: `ms-${Date.now()}`, projectId, status: 'UPCOMING' },
+      ],
+    })),
+  updateMilestone: (id, updates) =>
+    set((state) => ({
+      milestones: state.milestones.map((m) => (m.id === id ? { ...m, ...updates } : m)),
+    })),
+  deleteMilestone: (id) =>
+    set((state) => ({
+      milestones: state.milestones.filter((m) => m.id !== id),
+    })),
 
-  // ── Milestones CRUD ──
-  addMilestone: async (projectId, milestone) => {
-    const id = `ms-${Date.now()}`;
-    try {
-      const response = await api.post('/milestones', { ...milestone, id, projectId });
-      if (response.data?.success && response.data.data) {
-        set((state) => ({
-          milestones: [...state.milestones, response.data.data],
-        }));
-      }
-    } catch (err) {
-      console.error('Failed to add milestone:', err);
-    }
-  },
-  updateMilestone: async (id, updates) => {
-    try {
-      const response = await api.patch(`/milestones/${id}`, updates);
-      if (response.data?.success && response.data.data) {
-        set((state) => ({
-          milestones: state.milestones.map((m) => (m.id === id ? response.data.data : m)),
-        }));
-      }
-    } catch (err) {
-      console.error('Failed to update milestone:', err);
-    }
-  },
-  deleteMilestone: async (id) => {
-    try {
-      const response = await api.delete(`/milestones/${id}`);
-      if (response.data?.success) {
-        set((state) => ({
-          milestones: state.milestones.filter((m) => m.id !== id),
-        }));
-      }
-    } catch (err) {
-      console.error('Failed to delete milestone:', err);
-    }
-  },
-
-  // ── Governance ──
   completeGovernanceRecord: async (id, notes) => {
     try {
-      const record = get().governanceRecords.find((r) => r.id === id);
-      if (!record) return;
-
-      const response = await api.patch(`/governance-activities/${id}`, {
-        status: 'COMPLETED',
-        notes,
-        completedAt: new Date().toISOString().substring(0, 10),
+      const res = await fetch(`http://localhost:8080/api/v1/governance-activities/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isCompliant: true, notes, activityDate: new Date().toISOString() }),
       });
-
-      if (response.data?.success && response.data.data) {
+      if (res.ok) {
         set((state) => ({
           governanceRecords: state.governanceRecords.map((r) =>
-            r.id === id ? response.data.data : r
+            r.id === id
+              ? {
+                  ...r,
+                  isCompliant: true,
+                  activityDate: new Date().toISOString(),
+                  notes,
+                }
+              : r
           ),
         }));
-        await get().recalculateGovernance(record.projectId);
       }
-    } catch (err) {
-      console.error('Failed to complete governance record:', err);
+    } catch (e) {
+      console.error(e);
+      // Fallback
+      set((state) => ({
+        governanceRecords: state.governanceRecords.map((r) =>
+          r.id === id
+            ? {
+                ...r,
+                isCompliant: true,
+                activityDate: new Date().toISOString(),
+                notes,
+              }
+            : r
+        ),
+      }));
     }
   },
 
-  recalculateGovernance: async (projectId) => {
+  recalculateGovernance: (projectId) => {
     const records = get().governanceRecords.filter((r) => r.projectId === projectId);
     if (records.length === 0) return;
-    const completedCount = records.filter((r) => r.status === 'COMPLETED').length;
+    const completedCount = records.filter((r) => r.isCompliant).length;
     const totalCount = records.length;
     const rate = Math.round((completedCount / totalCount) * 100);
 
+    const project = get().projects.find((p) => p.id === projectId);
+    if (project) {
+      const accountId = project.accountId;
+      get().updateAccount(accountId, { governanceScore: rate });
+    }
+    // Determine health
     let health: Project['health'] = 'GREEN';
     if (rate < 50) health = 'RED';
     else if (rate < 80) health = 'AMBER';
 
+    set((state) => ({
+      projects: state.projects.map((p) =>
+        p.id === projectId ? { ...p, health } : p
+      ),
+    }));
+
+    // Update account totals
+    const updatedProject = get().projects.find((p) => p.id === projectId);
+    if (updatedProject) {
+      const accountId = updatedProject.accountId;
+      const accountProjects = get().projects.filter((p) => p.accountId === accountId);
+      const avgCompliance = Math.round(
+        accountProjects.reduce((sum, p) => sum + (p.health === 'GREEN' ? 100 : p.health === 'AMBER' ? 70 : 40), 0) / accountProjects.length
+      );
+
+      let accRAG: Account['ragStatus'] = 'GREEN';
+      if (avgCompliance < 50) accRAG = 'RED';
+      else if (avgCompliance < 80) accRAG = 'AMBER';
+
+      set((state) => ({
+        accounts: state.accounts.map((a) =>
+          a.id === accountId
+            ? {
+                ...a,
+                healthScore: avgCompliance,
+                deliveryScore: avgCompliance,
+                governanceScore: avgCompliance,
+                customerScore: avgCompliance,
+                ragStatus: accRAG,
+              }
+            : a
+        ),
+      }));
+    }
+  },
+
+  addAIReport: (projectId, type, content) => {
+    const id = `rep-${Date.now()}`;
+    const newReport: AIReport = {
+      id,
+      projectId,
+      type,
+      content,
+      createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
+      status: 'DRAFT',
+    };
+    set((state) => ({
+      aiReports: [...state.aiReports, newReport],
+    }));
+    return id;
+  },
+  updateAIReport: (id, content) =>
+    set((state) => ({
+      aiReports: state.aiReports.map((r) => (r.id === id ? { ...r, content } : r)),
+    })),
+  publishAIReport: (id) =>
+    set((state) => ({
+      aiReports: state.aiReports.map((r) => (r.id === id ? { ...r, status: 'PUBLISHED' } : r)),
+    })),
+
+  syncWithBackend: async () => {
     try {
-      const response = await api.patch(`/projects/${projectId}`, {
-        complianceRate: rate,
-        health,
-      });
+      const [accRes, projRes, govRes] = await Promise.all([
+        fetch('http://localhost:8080/api/v1/accounts'),
+        fetch('http://localhost:8080/api/v1/projects'),
+        fetch('http://localhost:8080/api/v1/governance-activities')
+      ]);
+      if (accRes.ok && projRes.ok && govRes.ok) {
+        const dbAccounts = await accRes.json();
+        const dbProjects = await projRes.json();
+        const dbGovRecords = await govRes.json();
 
-      if (response.data?.success && response.data.data) {
-        const updatedProj = response.data.data;
-        set((state) => ({
-          projects: state.projects.map((p) => (p.id === projectId ? updatedProj : p)),
-        }));
+        set((state) => {
+          const existingAccIds = new Set((state.accounts || []).map(a => a.id));
+          const newAccounts = (dbAccounts || []).filter((a: any) => !existingAccIds.has(a.id));
+          
+          const existingProjIds = new Set((state.projects || []).map(p => p.id));
+          const newProjects = (dbProjects || []).filter((p: any) => !existingProjIds.has(p.id));
 
-        const accountId = updatedProj.accountId;
-        const accountProjects = get().projects.filter((p) => p.accountId === accountId);
-        const avgCompliance = Math.round(
-          accountProjects.reduce((sum, p) => sum + p.complianceRate, 0) / accountProjects.length
-        );
-
-        let accRAG: Account['ragStatus'] = 'GREEN';
-        if (avgCompliance < 50) accRAG = 'RED';
-        else if (avgCompliance < 80) accRAG = 'AMBER';
-
-        const accResponse = await api.patch(`/accounts/${accountId}`, {
-          complianceScore: avgCompliance,
-          governanceScore: avgCompliance,
-          ragStatus: accRAG,
+          return { 
+            accounts: [...state.accounts, ...newAccounts],
+            projects: [...state.projects, ...newProjects],
+            governanceRecords: dbGovRecords // Just overwrite with DB truth
+          };
         });
-
-        if (accResponse.data?.success && accResponse.data.data) {
-          set((state) => ({
-            accounts: state.accounts.map((a) =>
-              a.id === accountId ? accResponse.data.data : a
-            ),
-          }));
-        }
       }
-    } catch (err) {
-      console.error('Failed to recalculate governance scores:', err);
-    }
-  },
-
-  // ── AI Workspace ──
-  addAIReport: async (projectId, type, content, accountId?) => {
-    try {
-      const response = await api.post('/ai-drafts', {
-        projectId,
-        accountId,
-        type,
-        content,
-      });
-      if (response.data?.success && response.data.data) {
-        set((state) => ({
-          aiReports: [...state.aiReports, response.data.data],
-        }));
-        return response.data.data.id;
-      }
-    } catch (err) {
-      console.error('Failed to add AI report:', err);
-    }
-    return '';
-  },
-
-  updateAIReport: async (id, content) => {
-    try {
-      const response = await api.patch(`/ai-drafts/${id}`, { content });
-      if (response.data?.success && response.data.data) {
-        set((state) => ({
-          aiReports: state.aiReports.map((r) => (r.id === id ? response.data.data : r)),
-        }));
-      }
-    } catch (err) {
-      console.error('Failed to update AI report:', err);
-    }
-  },
-
-  publishAIReport: async (id) => {
-    try {
-      const response = await api.patch(`/ai-drafts/${id}`, { status: 'PUBLISHED' });
-      if (response.data?.success && response.data.data) {
-        set((state) => ({
-          aiReports: state.aiReports.map((r) => (r.id === id ? response.data.data : r)),
-        }));
-      }
-    } catch (err) {
-      console.error('Failed to publish AI report:', err);
+    } catch (e) {
+      console.error('Failed to sync with backend', e);
     }
   },
 }));

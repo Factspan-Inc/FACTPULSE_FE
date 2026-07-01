@@ -190,6 +190,17 @@ export const useCreateAccount = () => {
   });
 };
 
+// Creating Project
+export const useCreateProject = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: any) => apiClient.post('/projects', data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['projects', 'list'] });
+    }
+  });
+};
+
 // Generating AI Draft
 export const useGenerateDraft = () => {
   return useMutation({

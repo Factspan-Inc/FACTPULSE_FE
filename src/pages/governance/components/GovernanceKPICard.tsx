@@ -6,9 +6,10 @@ interface GovernanceKPICardProps {
   value: number;
   trend: number; // positive = up, negative = down
   target: number;
+  description?: string;
 }
 
-export default function GovernanceKPICard({ label, icon, value, trend, target }: GovernanceKPICardProps) {
+export default function GovernanceKPICard({ label, icon, value, trend, target, description }: GovernanceKPICardProps) {
   const [animated, setAnimated] = useState(false);
 
   useEffect(() => {
@@ -81,7 +82,6 @@ export default function GovernanceKPICard({ label, icon, value, trend, target }:
               color: '#64748b',
               textTransform: 'uppercase',
               letterSpacing: '0.6px',
-              marginBottom: '4px',
             }}
           >
             {label}
@@ -185,6 +185,11 @@ export default function GovernanceKPICard({ label, icon, value, trend, target }:
           </div>
         </div>
       </div>
+      {description && (
+        <div style={{ marginTop: '12px', fontSize: '11px', color: '#94a3b8', lineHeight: 1.4 }}>
+          {description}
+        </div>
+      )}
     </div>
   );
 }

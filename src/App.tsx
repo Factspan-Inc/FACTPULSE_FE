@@ -3,10 +3,35 @@ import { BrowserRouter } from 'react-router-dom';
 import AppRoutes from './routes';
 import { useUIStore } from './store/ui-store';
 import { useAuthStore } from './store/auth-store';
+import { useDataStore } from './store/data-store';
+import React from 'react';
+
+class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasError: boolean, error: any}> {
+  constructor(props: {children: React.ReactNode}) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error: any) {
+    return { hasError: true, error };
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ padding: 40, color: 'red' }}>
+          <h1>Something went wrong.</h1>
+          <pre>{this.state.error?.toString()}</pre>
+          <pre>{this.state.error?.stack}</pre>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 function App() {
   const theme = useUIStore((state) => state.theme);
   const checkMe = useAuthStore((state) => state.checkMe);
+  const syncWithBackend = useDataStore((state) => state.syncWithBackend);
   const [initializing, setInitializing] = useState(true);
 
   useEffect(() => {
@@ -25,10 +50,11 @@ function App() {
   useEffect(() => {
     const initAuth = async () => {
       await checkMe();
+      await syncWithBackend();
       setInitializing(false);
     };
     initAuth();
-  }, [checkMe]);
+  }, [checkMe, syncWithBackend]);
 
   if (initializing) {
     return (

@@ -62,9 +62,17 @@ export interface Project {
   id: string;
   accountId: string;
   name: string;
-  ragStatus: 'GREEN' | 'AMBER' | 'RED';
-  complianceRate: number; // percentage
-  createdAt: string;
+  status: 'ACTIVE' | 'ARCHIVED';
+  health: 'GREEN' | 'AMBER' | 'RED';
+  managementType: 'FS_MANAGED' | 'CLIENT_MANAGED';
+  sprintVelocity?: number;
+  throughputRate?: number;
+  staffingCount?: number;
+  staffingHealth?: number;
+  wbrCompliance?: boolean;
+  mbrCompliance?: boolean;
+  qbrCompliance?: boolean;
+  npsScore?: number;
 }
 
 export type GovernanceType = 

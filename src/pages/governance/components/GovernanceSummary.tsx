@@ -1,6 +1,8 @@
 interface GovernanceSummaryProps {
+  healthScore: number;
+  deliveryScore: number;
   governanceScore: number;
-  complianceScore: number;
+  customerScore: number;
   ragStatus: 'GREEN' | 'AMBER' | 'RED';
   highlights: string[];
   keyRisks: string[];
@@ -9,8 +11,10 @@ interface GovernanceSummaryProps {
 }
 
 export default function GovernanceSummary({
+  healthScore,
+  deliveryScore,
   governanceScore,
-  complianceScore,
+  customerScore,
   ragStatus,
   highlights,
   keyRisks,
@@ -104,8 +108,10 @@ export default function GovernanceSummary({
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
               {[
+                { label: 'Overall Health', value: healthScore, color: '#166534' },
+                { label: 'Delivery Score', value: deliveryScore, color: '#3b82f6' },
                 { label: 'Governance Score', value: governanceScore, color: '#0D2A66' },
-                { label: 'Compliance Score', value: complianceScore, color: '#F68B1F' },
+                { label: 'Customer Score', value: customerScore, color: '#F68B1F' },
               ].map((item) => (
                 <div key={item.label}>
                   <div style={{ fontSize: '10px', color: rc.text, opacity: 0.7, marginBottom: '3px' }}>{item.label}</div>

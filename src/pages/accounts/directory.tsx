@@ -163,8 +163,8 @@ export default function AccountsDirectoryPage() {
             >
               <th style={{ padding: '16px 24px' }}>Account details</th>
               <th style={{ padding: '16px 24px' }}>RAG Status</th>
-              <th style={{ padding: '16px 24px' }}>Governance Score</th>
-              <th style={{ padding: '16px 24px' }}>Compliance Score</th>
+              <th style={{ padding: '16px 24px' }}>Health Score</th>
+              <th style={{ padding: '16px 24px' }}>Delivery Score</th>
               <th style={{ padding: '16px 24px' }}>Projects Count</th>
               <th style={{ padding: '16px 24px', textAlign: 'right' }}>Actions</th>
             </tr>
@@ -229,10 +229,10 @@ export default function AccountsDirectoryPage() {
                       </span>
                     </td>
                     <td style={{ padding: '16px 24px', fontWeight: 'bold', color: '#1e293b' }}>
-                      {a.governanceScore}%
+                      {a.healthScore}%
                     </td>
                     <td style={{ padding: '16px 24px', fontWeight: 'bold', color: '#1e293b' }}>
-                      {a.complianceScore}%
+                      {a.deliveryScore}%
                     </td>
                     <td style={{ padding: '16px 24px', color: '#475569' }}>
                       🏢 {countProj} Active Project{countProj !== 1 ? 's' : ''}

@@ -1,7 +1,6 @@
 import React, { Suspense } from 'react';
 import { Routes, Route, Navigate, Link, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/auth-store';
-import { useDataStore } from '../store/data-store';
 import {
   LoginPage,
   LandingPage,
@@ -20,7 +19,6 @@ import {
   AIProcessingPage,
   AIWorkspacePage,
   UserManagementPage,
-  ProfilePage,
 } from './Lazyrout';
 
 // Role-Based Protected Route Guard Component
@@ -61,46 +59,6 @@ function Layout({ children }: { children: React.ReactNode }) {
   const logout = useAuthStore((state) => state.logout);
   const user = useAuthStore((state) => state.user);
   const location = useLocation();
-  const fetchProjects = useDataStore((state) => state.fetchProjects);
-  const fetchAccounts = useDataStore((state) => state.fetchAccounts);
-  const fetchBuyingCenters = useDataStore((state) => state.fetchBuyingCenters);
-  const fetchStakeholders = useDataStore((state) => state.fetchStakeholders);
-  const fetchRisks = useDataStore((state) => state.fetchRisks);
-  const fetchActions = useDataStore((state) => state.fetchActions);
-  const fetchDecisions = useDataStore((state) => state.fetchDecisions);
-  const fetchMilestones = useDataStore((state) => state.fetchMilestones);
-  const fetchGovernanceRecords = useDataStore((state) => state.fetchGovernanceRecords);
-  const fetchAIReports = useDataStore((state) => state.fetchAIReports);
-  const fetchArtifacts = useDataStore((state) => state.fetchArtifacts);
-
-  React.useEffect(() => {
-    if (user) {
-      fetchProjects().catch((err) => console.error('Failed to load projects:', err));
-      fetchAccounts().catch((err) => console.error('Failed to load accounts:', err));
-      fetchBuyingCenters().catch((err) => console.error('Failed to load buying centers:', err));
-      fetchStakeholders().catch((err) => console.error('Failed to load stakeholders:', err));
-      fetchRisks().catch((err) => console.error('Failed to load risks:', err));
-      fetchActions().catch((err) => console.error('Failed to load actions:', err));
-      fetchDecisions().catch((err) => console.error('Failed to load decisions:', err));
-      fetchMilestones().catch((err) => console.error('Failed to load milestones:', err));
-      fetchGovernanceRecords().catch((err) => console.error('Failed to load governance records:', err));
-      fetchAIReports().catch((err) => console.error('Failed to load AI reports:', err));
-      fetchArtifacts().catch((err) => console.error('Failed to load artifacts:', err));
-    }
-  }, [
-    user,
-    fetchProjects,
-    fetchAccounts,
-    fetchBuyingCenters,
-    fetchStakeholders,
-    fetchRisks,
-    fetchActions,
-    fetchDecisions,
-    fetchMilestones,
-    fetchGovernanceRecords,
-    fetchAIReports,
-    fetchArtifacts,
-  ]);
 
   const isLinkActive = (path: string) => {
     if (path === '/portfolio' && location.pathname === '/portfolio') return true;
@@ -201,20 +159,7 @@ function Layout({ children }: { children: React.ReactNode }) {
 
         {user && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <Link
-              to="/profile"
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'flex-end',
-                textDecoration: 'none',
-                cursor: 'pointer',
-                transition: 'opacity 0.2s',
-              }}
-              onMouseOver={(e) => (e.currentTarget.style.opacity = '0.85')}
-              onMouseOut={(e) => (e.currentTarget.style.opacity = '1')}
-              title="View profile"
-            >
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
               <span style={{ fontSize: '14px', fontWeight: 600, color: '#f3f4f6' }}>
                 {user.name}
               </span>
@@ -233,7 +178,7 @@ function Layout({ children }: { children: React.ReactNode }) {
               >
                 {user.role.replace('_', ' ')}
               </span>
-            </Link>
+            </div>
             <button
               onClick={logout}
               style={{
@@ -338,18 +283,6 @@ export default function AppRoutes() {
           }
         />
 
-        {/* User Profile */}
-        <Route
-          path="/profile"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <ProfilePage />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-
         {/* Portfolio */}
         <Route
           path="/portfolio"
@@ -376,7 +309,7 @@ export default function AppRoutes() {
         <Route
           path="/accounts/new"
           element={
-            <ProtectedRoute allowedRoles={['PLATFORM_ADMIN', 'ACCOUNT_LEAD']}>
+            <ProtectedRoute allowedRoles={['PLATFORM_ADMIN', 'ACCOUNT_LEAD', 'DELIVERY_LEAD']}>
               <Layout>
                 <AccountFormPage />
               </Layout>
@@ -396,7 +329,7 @@ export default function AppRoutes() {
         <Route
           path="/accounts/:accountId/edit"
           element={
-            <ProtectedRoute allowedRoles={['PLATFORM_ADMIN', 'ACCOUNT_LEAD']}>
+            <ProtectedRoute allowedRoles={['PLATFORM_ADMIN', 'ACCOUNT_LEAD', 'DELIVERY_LEAD']}>
               <Layout>
                 <AccountFormPage />
               </Layout>

@@ -8,15 +8,10 @@ export default function PortfolioPage() {
   const criticalAccountsCount = accounts.filter((a) => a.ragStatus === 'RED').length;
 
   // Calculate averages
-  const avgGovScore =
-    totalAccounts > 0
-      ? Math.round(accounts.reduce((sum, a) => sum + a.governanceScore, 0) / totalAccounts)
-      : 0;
-
-  const avgCompliance =
-    totalAccounts > 0
-      ? Math.round(accounts.reduce((sum, a) => sum + a.complianceScore, 0) / totalAccounts)
-      : 0;
+  const avgHealthScore = totalAccounts > 0 ? Math.round(accounts.reduce((sum, a) => sum + a.healthScore, 0) / totalAccounts) : 0;
+  const avgDeliveryScore = totalAccounts > 0 ? Math.round(accounts.reduce((sum, a) => sum + a.deliveryScore, 0) / totalAccounts) : 0;
+  const avgGovScore = totalAccounts > 0 ? Math.round(accounts.reduce((sum, a) => sum + a.governanceScore, 0) / totalAccounts) : 0;
+  const avgCustomerScore = totalAccounts > 0 ? Math.round(accounts.reduce((sum, a) => sum + a.customerScore, 0) / totalAccounts) : 0;
 
   // Visual styling for RAG status
   const getRagBadgeStyle = (status: 'GREEN' | 'AMBER' | 'RED') => {
@@ -77,7 +72,7 @@ export default function PortfolioPage() {
           <span style={{ fontSize: '12px', color: '#64748b' }}>Generated 2 hours ago</span>
         </div>
         <p style={{ margin: 0, fontSize: '14px', lineHeight: '1.6', color: '#334155' }}>
-          Overall delivery health is at <strong>{avgGovScore}% Governance compliance</strong>.
+          Overall delivery health is at <strong>{avgHealthScore}% Health Score</strong>.
           Baptist Health remains a
           <span style={{ color: '#ef4444', fontWeight: 600 }}> HIGH RISK (RED)</span> account due to
           delayed sandboxes on EHR API integrations. Macy's leads compliance at 92% with active
@@ -160,10 +155,10 @@ export default function PortfolioPage() {
                 letterSpacing: '0.5px',
               }}
             >
-              Average Governance
+              Average Health
             </div>
             <div style={{ color: '#1e3a8a', fontSize: '32px', fontWeight: 800, marginTop: '8px' }}>
-              {avgGovScore}%
+              {avgHealthScore}%
             </div>
           </div>
           {/* Radial progress ring mock */}
@@ -187,7 +182,7 @@ export default function PortfolioPage() {
                 strokeWidth="4"
                 fill="transparent"
                 strokeDasharray="125.6"
-                strokeDashoffset={125.6 - (125.6 * avgGovScore) / 100}
+                strokeDashoffset={125.6 - (125.6 * avgHealthScore) / 100}
               />
             </svg>
             <span
@@ -198,7 +193,7 @@ export default function PortfolioPage() {
                 color: '#334155',
               }}
             >
-              {avgGovScore}%
+              {avgHealthScore}%
             </span>
           </div>
         </div>
@@ -229,7 +224,7 @@ export default function PortfolioPage() {
               Delivery Compliance
             </div>
             <div style={{ color: '#1e3a8a', fontSize: '32px', fontWeight: 800, marginTop: '8px' }}>
-              {avgCompliance}%
+              {avgDeliveryScore}%
             </div>
           </div>
           <div
@@ -434,9 +429,9 @@ export default function PortfolioPage() {
                         marginBottom: '4px',
                       }}
                     >
-                      <span>Governance score</span>
+                      <span>Health score</span>
                       <span style={{ fontWeight: 'bold', color: '#334155' }}>
-                        {a.governanceScore}%
+                        {a.healthScore}%
                       </span>
                     </div>
                     <div
@@ -450,7 +445,7 @@ export default function PortfolioPage() {
                     >
                       <div
                         style={{
-                          width: `${a.governanceScore}%`,
+                          width: `${a.healthScore}%`,
                           height: '100%',
                           background: '#1e3a8a',
                           borderRadius: '3px',
@@ -470,9 +465,9 @@ export default function PortfolioPage() {
                         marginBottom: '4px',
                       }}
                     >
-                      <span>Reviews Compliance</span>
+                      <span>Delivery score</span>
                       <span style={{ fontWeight: 'bold', color: '#334155' }}>
-                        {a.complianceScore}%
+                        {a.deliveryScore}%
                       </span>
                     </div>
                     <div
@@ -486,7 +481,7 @@ export default function PortfolioPage() {
                     >
                       <div
                         style={{
-                          width: `${a.complianceScore}%`,
+                          width: `${a.deliveryScore}%`,
                           height: '100%',
                           background: '#d97706',
                           borderRadius: '3px',

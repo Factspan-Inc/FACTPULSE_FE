@@ -305,7 +305,7 @@ export default function BuyingCenterDashboardPage() {
                       {p.name}
                     </div>
                     <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>
-                      Compliance: {p.complianceRate}%
+                      Staffing Health: {p.staffingHealth ?? 0}%
                     </div>
                   </div>
                   <Link

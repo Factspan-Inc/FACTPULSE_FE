@@ -1,10 +1,9 @@
 import { Link } from 'react-router-dom';
-import { useEffect } from 'react';
 import { useDataStore } from '../../store/data-store';
 import type { GovernanceRecord } from '../../store/data-store';
 
 export default function GovernanceExceptionsPage() {
-  const { governanceRecords, projects, accounts, completeGovernanceRecord, recalculateGovernance, fetchGovernanceActivities } =
+  const { governanceRecords, projects, accounts, completeGovernanceRecord, recalculateGovernance } =
     useDataStore();
 
   // Exceptions are records with status 'OVERDUE'
@@ -15,14 +14,8 @@ export default function GovernanceExceptionsPage() {
   const missingNotesCount = exceptions.filter((r) => r.type === 'WEEKLY_NOTE').length;
   const otherOverdueCount = exceptions.length - missingWBRCount - missingNotesCount;
 
-  useEffect(() => {
-    fetchGovernanceActivities().catch(() => {
-      // Keep local exceptions if backend fetch fails
-    });
-  }, [fetchGovernanceActivities]);
-
-  const handleResolve = async (id: string, projectId: string) => {
-    await completeGovernanceRecord(id, 'Resolved via Exception Console.');
+  const handleResolve = (id: string, projectId: string) => {
+    completeGovernanceRecord(id, 'Resolved via Exception Console.');
     recalculateGovernance(projectId);
   };
 

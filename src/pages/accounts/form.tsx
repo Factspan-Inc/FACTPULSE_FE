@@ -13,35 +13,49 @@ export default function AccountFormPage() {
   const [name, setName] = useState('');
   const [logoUrl, setLogoUrl] = useState('');
   const [ragStatus, setRagStatus] = useState<'GREEN' | 'AMBER' | 'RED'>('GREEN');
+  const [healthScore, setHealthScore] = useState(100);
+  const [deliveryScore, setDeliveryScore] = useState(100);
   const [govScore, setGovScore] = useState(100);
-  const [compScore, setCompScore] = useState(100);
+  const [customerScore, setCustomerScore] = useState(100);
 
   useEffect(() => {
     if (isEdit && account) {
       setName(account.name);
       setLogoUrl(account.logoUrl || '');
       setRagStatus(account.ragStatus);
+      setHealthScore(account.healthScore);
+      setDeliveryScore(account.deliveryScore);
       setGovScore(account.governanceScore);
-      setCompScore(account.complianceScore);
+      setCustomerScore(account.customerScore);
     }
   }, [isEdit, account]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name) return;
 
     if (isEdit && accountId) {
-      updateAccount(accountId, {
+      await updateAccount(accountId, {
         name,
         logoUrl: logoUrl || undefined,
         ragStatus,
+        healthScore: Number(healthScore),
+        deliveryScore: Number(deliveryScore),
         governanceScore: Number(govScore),
-        complianceScore: Number(compScore),
+        customerScore: Number(customerScore),
       });
       navigate(`/accounts/${accountId}`);
     } else {
-      addAccount({ name, logoUrl: logoUrl || undefined });
-      navigate('/accounts');
+      const newId = await addAccount({
+        name,
+        logoUrl: logoUrl || undefined,
+        ragStatus,
+        healthScore: Number(healthScore),
+        deliveryScore: Number(deliveryScore),
+        governanceScore: Number(govScore),
+        customerScore: Number(customerScore),
+      });
+      navigate(`/accounts/${newId}`);
     }
   };
 
@@ -177,7 +191,7 @@ export default function AccountFormPage() {
                 </select>
               </div>
 
-              {/* Governance & Compliance Scores */}
+              {/* Health Scores */}
               <div
                 style={{
                   display: 'grid',
@@ -186,6 +200,62 @@ export default function AccountFormPage() {
                   marginBottom: '24px',
                 }}
               >
+                <div>
+                  <label
+                    style={{
+                      display: 'block',
+                      marginBottom: '6px',
+                      fontWeight: 600,
+                      fontSize: '13px',
+                      color: '#334155',
+                    }}
+                  >
+                    Health Score (%)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      border: '1px solid #cbd5e1',
+                      borderRadius: '6px',
+                      fontSize: '14px',
+                      boxSizing: 'border-box',
+                    }}
+                    value={healthScore}
+                    onChange={(e) => setHealthScore(Number(e.target.value))}
+                  />
+                </div>
+                <div>
+                  <label
+                    style={{
+                      display: 'block',
+                      marginBottom: '6px',
+                      fontWeight: 600,
+                      fontSize: '13px',
+                      color: '#334155',
+                    }}
+                  >
+                    Delivery Score (%)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      border: '1px solid #cbd5e1',
+                      borderRadius: '6px',
+                      fontSize: '14px',
+                      boxSizing: 'border-box',
+                    }}
+                    value={deliveryScore}
+                    onChange={(e) => setDeliveryScore(Number(e.target.value))}
+                  />
+                </div>
                 <div>
                   <label
                     style={{
@@ -224,7 +294,7 @@ export default function AccountFormPage() {
                       color: '#334155',
                     }}
                   >
-                    Compliance Score (%)
+                    Customer Score (%)
                   </label>
                   <input
                     type="number"
@@ -238,8 +308,8 @@ export default function AccountFormPage() {
                       fontSize: '14px',
                       boxSizing: 'border-box',
                     }}
-                    value={compScore}
-                    onChange={(e) => setCompScore(Number(e.target.value))}
+                    value={customerScore}
+                    onChange={(e) => setCustomerScore(Number(e.target.value))}
                   />
                 </div>
               </div>
